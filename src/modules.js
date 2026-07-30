@@ -18,7 +18,7 @@ export const MODULES = {
     tagline: "Match people to work, balance capacity",
     accent: "var(--talent)",
     code: "TM",
-    hasProjects: false,
+    hasProjects: true,
     description:
       "Map skills, plan capacity, and surface the right people for the right work across project accounts.",
   },

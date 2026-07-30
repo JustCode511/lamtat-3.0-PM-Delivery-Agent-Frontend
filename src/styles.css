@@ -1,63 +1,126 @@
 /* ============================================================
-   Delivery Intelligence — design tokens
-   Aesthetic: "command deck" — deep slate, electric cyan signal,
-   technical display type. Deliberately not the cream/serif AI look.
+   AI Delivery Intelligence — Design Tokens
+
+   Dark  : original "command deck" deep slate + Accenture purple
+   Light : Accenture portal light — lavender bg, white cards,
+           purple labels, shadow-only elevation (no borders)
    ============================================================ */
 
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+/* ── Dark theme (default) ──────────────────────────────────────────────────── */
 :root {
-  /* Palette */
-  --bg: #0d1117;            /* deep slate base */
-  --surface: #161b26;      /* raised panels */
-  --surface-2: #1d2330;    /* cards */
-  --border: #2a3140;       /* hairline dividers */
-  --border-bright: #3a4356;
+  --bg:           #0d1117;
+  --surface:      #161b26;
+  --surface-2:    #1d2330;
+  --surface-1:    #161b26;
+  --border:       #2a3140;
+  --border-bright:#3a4356;
+  --border-strong:#4a536a;
 
-  --text: #e6edf3;         /* primary */
-  --text-dim: #9aa5b4;     /* secondary */
-  --text-mute: #6b7688;    /* tertiary / captions */
+  --text:         #e6edf3;
+  --text-dim:     #9aa5b4;
+  --text-mute:    #6b7688;
+  --text-secondary:#9aa5b4;
+  --text-muted:   #6b7688;
 
-  --signal: #22d3ee;       /* electric cyan — the one bold accent */
-  --signal-dim: #0e7490;
-  --signal-glow: rgba(34, 211, 238, 0.15);
+  /* Accenture Purple */
+  --signal:       #A100FF;
+  --signal-dim:   #7800cc;
+  --signal-glow:  rgba(161, 0, 255, 0.18);
 
-  /* Health / status */
-  --ok: #34d399;
-  --ok-bg: rgba(52, 211, 153, 0.12);
-  --warn: #fbbf24;
-  --warn-bg: rgba(251, 191, 36, 0.12);
-  --risk: #f87171;
-  --risk-bg: rgba(248, 113, 113, 0.12);
+  --ok:           #34d399;
+  --ok-bg:        rgba(52, 211, 153, 0.12);
+  --warn:         #f97316;
+  --warn-bg:      rgba(249, 115, 22, 0.12);
+  --risk:         #f87171;
+  --risk-bg:      rgba(248, 113, 113, 0.12);
 
-  /* Semantic aliases */
   --text-danger:    #f87171;
   --bg-danger:      rgba(248, 113, 113, 0.08);
   --bg-danger-pill: rgba(248, 113, 113, 0.14);
   --border-danger:  rgba(248, 113, 113, 0.28);
-  --text-warning:   #fbbf24;
-  --bg-warning:     rgba(251, 191, 36, 0.08);
-  --border-warning: rgba(251, 191, 36, 0.28);
+  --text-warning:   #f97316;
+  --bg-warning:     rgba(249, 115, 22, 0.08);
+  --border-warning: rgba(249, 115, 22, 0.28);
   --text-success:   #34d399;
   --bg-success:     rgba(52, 211, 153, 0.08);
   --border-success: rgba(52, 211, 153, 0.28);
-  --text-secondary: #9aa5b4;
-  --text-muted:     #6b7688;
-  --surface-1:      #161b26;
-  --border-strong:  #3a4356;
 
-  /* Per-module accents (subtle, used sparingly) */
-  --pm: #22d3ee;
-  --talent: #a78bfa;
-  --code: #34d399;
-  --finops: #fbbf24;
+  --pm:     #A100FF;
+  --talent: #c84bff;
+  --code:   #34d399;
+  --finops: #f97316;
 
-  --radius: 6px;
+  --radius:    6px;
   --radius-lg: 12px;
+  --radius-xl: 20px;
 
-  --font-display: "Space Grotesk", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-display: "Inter", system-ui, sans-serif;
+  --font-body:    "Inter", system-ui, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+  --gradient-brand: linear-gradient(135deg, #A100FF 0%, #c84bff 100%);
+  --shadow-glow-sm: 0 0 20px rgba(161,0,255,0.15);
+  --shadow-glow-md: 0 0 40px rgba(161,0,255,0.12), 0 0 80px rgba(161,0,255,0.05);
+  --shadow-card:    0 4px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.04);
 }
 
+/* ── Light theme — Accenture portal style ──────────────────────────────────── */
+[data-theme="light"] {
+  /* Lavender background + white card surfaces */
+  --bg:           #ede9f5;
+  --surface:      #ffffff;
+  --surface-2:    #f5f2fc;
+  --surface-1:    #ffffff;
+
+  /* Shadow-only elevation — no hard borders */
+  --border:       rgba(124, 58, 237, 0.10);
+  --border-bright:rgba(124, 58, 237, 0.18);
+  --border-strong:rgba(124, 58, 237, 0.28);
+
+  --text:          #1a1a2e;
+  --text-dim:      #3d3d5c;
+  --text-mute:     #7b7b9a;
+  --text-secondary:#3d3d5c;
+  --text-muted:    #7b7b9a;
+
+  /* Medium purple for labels/interactive — matches screenshot */
+  --signal:        #7c3aed;
+  --signal-dim:    #5b21b6;
+  --signal-glow:   rgba(124, 58, 237, 0.14);
+
+  --ok:            #059669;
+  --ok-bg:         rgba(5, 150, 105, 0.10);
+  --warn:          #b45309;
+  --warn-bg:       rgba(180, 83, 9, 0.10);
+  --risk:          #dc2626;
+  --risk-bg:       rgba(220, 38, 38, 0.10);
+
+  --text-danger:    #dc2626;
+  --bg-danger:      rgba(220, 38, 38, 0.06);
+  --bg-danger-pill: rgba(220, 38, 38, 0.12);
+  --border-danger:  rgba(220, 38, 38, 0.25);
+  --text-warning:   #b45309;
+  --bg-warning:     rgba(180, 83, 9, 0.06);
+  --border-warning: rgba(180, 83, 9, 0.25);
+  --text-success:   #059669;
+  --bg-success:     rgba(5, 150, 105, 0.06);
+  --border-success: rgba(5, 150, 105, 0.25);
+
+  --pm:     #7c3aed;
+  --talent: #9333ea;
+  --code:   #059669;
+  --finops: #b45309;
+
+  --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  --shadow-card:    0 2px 16px rgba(100, 60, 200, 0.10), 0 1px 4px rgba(0,0,0,0.06);
+  --shadow-glow-sm: 0 0 20px rgba(124,58,237,0.12);
+  --shadow-glow-md: 0 0 40px rgba(124,58,237,0.10);
+}
+
+/* ── Base reset ────────────────────────────────────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #root { height: 100%; }
@@ -71,7 +134,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* subtle grid texture on the base background */
+/* Dark mode: subtle grid texture */
 body::before {
   content: "";
   position: fixed;
@@ -85,7 +148,22 @@ body::before {
   z-index: 0;
 }
 
+/* Light mode: no grid texture */
+[data-theme="light"] body::before { display: none; }
+
 #root { position: relative; z-index: 1; }
+
+/* Dark mode: subtle ambient glow */
+body {
+  background-image:
+    radial-gradient(ellipse 70% 50% at 8% 10%, rgba(161,0,255,0.05), transparent),
+    radial-gradient(ellipse 55% 45% at 92% 90%, rgba(200,75,255,0.04), transparent);
+}
+
+/* Light mode: no ambient glow — clean flat lavender */
+[data-theme="light"] body {
+  background-image: none;
+}
 
 h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.01em; }
 
@@ -107,18 +185,18 @@ input, textarea {
 
 .mono { font-family: var(--font-mono); }
 
-/* ---- shared utility components ---- */
+/* ── Shared components ─────────────────────────────────────────────────────── */
 
 .btn-primary {
   background: var(--signal);
-  color: #06222b;
+  color: #ffffff;
   font-weight: 600;
   padding: 11px 20px;
   border-radius: var(--radius);
   font-size: 14px;
   transition: filter 0.15s, transform 0.05s;
 }
-.btn-primary:hover { filter: brightness(1.1); }
+.btn-primary:hover { filter: brightness(1.12); }
 .btn-primary:active { transform: translateY(1px); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -143,11 +221,10 @@ input, textarea {
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
-.badge-ok { background: var(--ok-bg); color: var(--ok); }
+.badge-ok   { background: var(--ok-bg);   color: var(--ok);   }
 .badge-warn { background: var(--warn-bg); color: var(--warn); }
 .badge-risk { background: var(--risk-bg); color: var(--risk); }
 
-/* focus visibility for keyboard users */
 :focus-visible {
   outline: 2px solid var(--signal);
   outline-offset: 2px;
@@ -157,26 +234,7 @@ input, textarea {
   * { animation: none !important; transition: none !important; }
 }
 
-/* ============================================================
-   v2 — enhanced design tokens, utilities, and animations
-   ============================================================ */
-
-:root {
-  --gradient-brand:  linear-gradient(135deg, #22d3ee 0%, #a78bfa 100%);
-  --shadow-glow-sm:  0 0 20px rgba(34,211,238,0.15);
-  --shadow-glow-md:  0 0 40px rgba(34,211,238,0.12), 0 0 80px rgba(34,211,238,0.05);
-  --shadow-card:     0 4px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.04);
-  --radius-xl:       20px;
-}
-
-/* Body ambient glows */
-body {
-  background-image:
-    radial-gradient(ellipse 70% 50% at 8% 10%, rgba(34,211,238,0.05), transparent),
-    radial-gradient(ellipse 55% 45% at 92% 90%, rgba(167,139,250,0.05), transparent);
-}
-
-/* ── Gradient text ─────────────────────────────────────────── */
+/* ── Gradient text ─────────────────────────────────────────────────────────── */
 .text-gradient {
   background: var(--gradient-brand);
   -webkit-background-clip: text;
@@ -184,14 +242,30 @@ body {
   background-clip: text;
 }
 
-/* ── Glass surface ─────────────────────────────────────────── */
+/* ── Glass surface (dark mode only) ───────────────────────────────────────── */
 .glass {
-  background: rgba(22,27,38,0.75);
+  background: rgba(22, 27, 38, 0.80);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* ── Animations ────────────────────────────────────────────── */
+[data-theme="light"] .glass {
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: 0 1px 12px rgba(100, 60, 200, 0.08) !important;
+}
+
+/* Light mode cards — white with shadow, minimal border */
+[data-theme="light"] .surface-card {
+  background: #ffffff;
+  box-shadow: var(--shadow-card);
+  border: 1px solid rgba(124, 58, 237, 0.08);
+  border-radius: var(--radius-lg);
+}
+
+/* ── Animations ────────────────────────────────────────────────────────────── */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -213,7 +287,6 @@ body {
 .fade-up-3 { animation: fadeUp 0.35s 0.21s ease both; }
 .fade-up-4 { animation: fadeUp 0.35s 0.28s ease both; }
 
-/* Live indicator dot */
 .live-dot {
   display: inline-block;
   width: 6px;
@@ -223,7 +296,6 @@ body {
   flex-shrink: 0;
 }
 
-/* Skeleton loading shimmer */
 .skeleton {
   background: linear-gradient(
     90deg,

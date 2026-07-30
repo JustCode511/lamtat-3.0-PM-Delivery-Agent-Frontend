@@ -147,7 +147,7 @@ const s = {
   },
   mark: {
     fontSize: "20px",
-    background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+    background: "linear-gradient(135deg, #A100FF, #c84bff)",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
@@ -189,7 +189,7 @@ const s = {
     padding: "10px 13px", borderRadius: "8px",
   },
   btn: {
-    background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+    background: "linear-gradient(135deg, #A100FF 0%, #c84bff 100%)",
     color: "#06222b", fontWeight: 700,
     padding: "13px", borderRadius: "8px",
     fontSize: "14px", fontFamily: "var(--font-body)",

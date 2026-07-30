@@ -1,10 +1,12 @@
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { MODULES } from "../modules.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import ChatPanel from "../components/ChatPanel.jsx";
 import PMDashboard from "../components/PMDashboard.jsx";
+import TalentDashboard from "../components/TalentDashboard.jsx";
 
-const ACCENT_HEX = { pm: "#22d3ee", talent: "#a78bfa", code: "#34d399", finops: "#fbbf24" };
+const ACCENT_HEX = { pm: "#A100FF", talent: "#c84bff", code: "#34d399", finops: "#f97316" };
 
 const GREETINGS = {
   pm:     "Hi — I'm your PM Delivery agent. Ask me about any project's status, risks, or how to resolve them. Try: \"What's at risk in AABGFY26?\"",
@@ -17,6 +19,7 @@ export default function ModuleView() {
   const { module } = useParams();
   const navigate   = useNavigate();
   const { user, signOut } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
   const mod = MODULES[module];
 
   if (!mod) return <Navigate to="/" replace />;
@@ -45,6 +48,9 @@ export default function ModuleView() {
           )}
         </div>
         <div style={s.right}>
+          <button onClick={toggleTheme} style={s.themeBtn} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
           <span style={s.userLabel} className="mono">{user}</span>
           <button className="btn-ghost" onClick={() => { signOut(); navigate("/login"); }}>
             Sign out
@@ -55,8 +61,10 @@ export default function ModuleView() {
       {/* Two-column body */}
       <div style={s.body}>
         <section style={s.dashCol}>
-          {mod.hasProjects
+          {mod.id === "pm"
             ? <PMDashboard accentHex={accentHex} />
+            : mod.id === "talent"
+            ? <TalentDashboard accentHex={accentHex} />
             : <ComingSoon mod={mod} accentHex={accentHex} />}
         </section>
         <section style={s.chatCol}>
@@ -105,7 +113,7 @@ const s = {
     background: "none", border: "none", cursor: "pointer",
   },
   homeMark: {
-    background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+    background: "linear-gradient(135deg, #A100FF, #c84bff)",
     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
     backgroundClip: "text", fontSize: "16px",
   },
@@ -117,6 +125,7 @@ const s = {
   modName: { fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "14px", color: "var(--text)" },
   right: { display: "flex", alignItems: "center", gap: "12px" },
   userLabel: { fontSize: "12px", color: "var(--text-mute)" },
+  themeBtn: { fontSize: 16, background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius)", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-dim)", transition: "all 0.15s" },
 
   body: {
     flex: 1, display: "grid",
@@ -124,7 +133,7 @@ const s = {
     gap: "14px", padding: "14px", minHeight: 0,
   },
   dashCol: {
-    background: "rgba(22,27,38,0.8)",
+    background: "var(--surface)",
     backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
     border: "1px solid rgba(42,49,64,0.6)",
     borderRadius: "var(--radius-lg)",
@@ -151,7 +160,7 @@ const s = {
     marginBottom: "22px", position: "relative", zIndex: 1,
   },
   soonNote: {
-    background: "rgba(29,35,48,0.8)",
+    background: "var(--surface-2)",
     border: "1px solid var(--border)",
     borderRadius: "var(--radius)",
     padding: "14px 16px",

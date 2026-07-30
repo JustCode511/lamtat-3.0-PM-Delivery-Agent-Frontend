@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { getTalentDashboard, getTalentMatrix, triggerTalentSync } from "../api/client.js";
 
-const ACCENT = "#a78bfa";
+const ACCENT = "#c84bff";
 
 const LEVEL_STYLE = {
-  primary:   { bg: "#a78bfa22", color: "#a78bfa", label: "●" },
-  secondary: { bg: "#a78bfa0d", color: "#6d5fa8", label: "◌" },
+  primary:   { bg: "#c84bff22", color: "#a78bfa", label: "●" },
+  secondary: { bg: "#c84bff0d", color: "#9020cc", label: "◌" },
 };
 
 const STATUS_COLOR = {
@@ -41,9 +41,11 @@ export default function TalentDashboard({ accentHex = ACCENT }) {
     setSyncMsg(null);
     try {
       const r = await triggerTalentSync();
-      setSyncMsg(r.synced
-        ? `Synced from Jira — ${r.employees_matched} matched, ${r.allocations_created} allocations rebuilt.`
-        : `Sync skipped: ${r.reason}`);
+      if (r.synced_employees !== undefined) {
+        setSyncMsg(`Synced from Jira — ${r.synced_employees} employees matched, ${r.updated_allocations} allocations updated. Unmatched: ${r.unmatched_assignees?.length ?? 0}.`);
+      } else {
+        setSyncMsg(`Sync failed: unexpected response`);
+      }
       loadData();
     } catch (e) {
       setSyncMsg(`Sync failed: ${e.message}`);
@@ -153,6 +155,12 @@ function OverviewTab({ stats, accentHex }) {
           </span>
         </div>
       )}
+      {stats.rolling_off_soon?.length > 0 && (
+        <RollingOffPanel people={stats.rolling_off_soon} accentHex={accentHex} />
+      )}
+      {stats.bench_employees?.length > 0 && (
+        <BenchPanel people={stats.bench_employees} accentHex={accentHex} />
+      )}
     </>
   );
 }
@@ -196,8 +204,8 @@ function SkillMatrixTab({ matrix, accentHex, deptFilter, setDeptFilter, skillFil
           {matrix.employees.length} people · {matrix.skills.length} skills
         </span>
         <span style={s.legend}>
-          <span style={{ color: "#a78bfa" }}>● Primary</span>
-          <span style={{ color: "#6d5fa8", marginLeft: 10 }}>◌ Secondary</span>
+          <span style={{ color: "#c84bff" }}>● Primary</span>
+          <span style={{ color: "#9020cc", marginLeft: 10 }}>◌ Secondary</span>
         </span>
       </div>
 
@@ -269,6 +277,94 @@ function SkillMatrixTab({ matrix, accentHex, deptFilter, setDeptFilter, skillFil
   );
 }
 
+/* ── Rolling Off Panel ─────────────────────────────────────────────────────── */
+
+function RollingOffPanel({ people, accentHex }) {
+  const urgencyColor = (days) =>
+    days <= 7  ? "var(--risk)" :
+    days <= 14 ? "var(--warn)" : "var(--signal)";
+
+  return (
+    <div style={s.rollingWrap}>
+      <div style={s.rollingHeader}>
+        <span style={{ color: "var(--warn)", fontSize: 14 }}>📅</span>
+        <span style={s.rollingTitle}>Rolling Off in Next 30 Days</span>
+        <span style={s.rollingCount}>{people.length} {people.length === 1 ? "person" : "people"}</span>
+      </div>
+      <div style={s.rollingList}>
+        {people.map(p => (
+          <div key={p.id} style={s.rollingCard}>
+            <div style={s.rollingTop}>
+              <div style={s.rollingLeft}>
+                <div style={s.rollingName}>{p.name}</div>
+                <div style={s.rollingMeta}>{p.designation} · {p.location}</div>
+              </div>
+              <div style={s.rollingRight}>
+                <span style={{ ...s.daysChip, color: urgencyColor(p.days_left), borderColor: urgencyColor(p.days_left) + "44", background: urgencyColor(p.days_left) + "12" }}>
+                  {p.days_left === 0 ? "Today" : `${p.days_left}d left`}
+                </span>
+              </div>
+            </div>
+            <div style={s.rollingProject}>
+              <span style={s.rollingProjectLabel}>Project:</span>
+              <span style={{ color: "var(--signal)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{p.current_project || "—"}</span>
+              <span style={{ color: "var(--text-mute)", fontSize: 11, marginLeft: 8 }}>· rolls off {p.availability_date}</span>
+            </div>
+            <div style={s.skillsRow}>
+              {p.primary_skills.map(sk => (
+                <span key={sk} style={s.skillChipPrimary}>{sk}</span>
+              ))}
+              {p.secondary_skills.map(sk => (
+                <span key={sk} style={s.skillChipSecondary}>{sk}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ── Bench Panel ───────────────────────────────────────────────────────────── */
+
+function BenchPanel({ people, accentHex }) {
+  return (
+    <div style={s.benchWrap}>
+      <div style={s.rollingHeader}>
+        <span style={{ fontSize: 14 }}>⏳</span>
+        <span style={s.rollingTitle}>People on Bench</span>
+        <span style={{ ...s.rollingCount, color: "var(--warn)", borderColor: "rgba(251,191,36,0.35)", background: "rgba(251,191,36,0.08)" }}>
+          {people.length} {people.length === 1 ? "person" : "people"} · available now
+        </span>
+      </div>
+      <div style={s.rollingList}>
+        {people.map(p => (
+          <div key={p.id} style={s.benchCard}>
+            <div style={s.rollingTop}>
+              <div style={s.rollingLeft}>
+                <div style={s.rollingName}>{p.name}</div>
+                <div style={s.rollingMeta}>{p.designation} · {p.location}</div>
+              </div>
+              <span style={s.availChip}>{p.availability_pct}% avail</span>
+            </div>
+            <div style={{ fontSize: 10, color: "var(--text-mute)" }}>
+              {p.department} · {p.career_level}
+            </div>
+            <div style={s.skillsRow}>
+              {p.primary_skills.map(sk => (
+                <span key={sk} style={s.skillChipPrimary}>{sk}</span>
+              ))}
+              {p.secondary_skills.map(sk => (
+                <span key={sk} style={s.skillChipSecondary}>{sk}</span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ── Sub-components ────────────────────────────────────────────────────────── */
 
 function StatCard({ label, value, sub, color, icon, alert }) {
@@ -334,7 +430,7 @@ const s = {
 
   // Overview
   grid:    { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: 10 },
-  card:    { background: "rgba(29,35,48,0.8)", border: "1px solid", borderRadius: "var(--radius-lg)", padding: "14px", display: "flex", flexDirection: "column", gap: 4 },
+  card:    { background: "var(--surface-2)", border: "1px solid", borderRadius: "var(--radius-lg)", padding: "14px", display: "flex", flexDirection: "column", gap: 4 },
   cardTop: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 },
   iconWrap:{ width: 28, height: 28, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 },
   alertDot:{ width: 7, height: 7, borderRadius: "50%", background: "var(--risk)", boxShadow: "0 0 6px var(--risk)" },
@@ -342,6 +438,30 @@ const s = {
   cardLabel: { fontSize: 11, fontWeight: 600, color: "var(--text-dim)", marginTop: 5 },
   cardSub:   { fontSize: 11, color: "var(--text-mute)" },
   notice:  { background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.2)", borderRadius: "var(--radius)", padding: "10px 12px", fontSize: 13, color: "var(--text-dim)", lineHeight: 1.55 },
+
+  // Rolling Off Panel
+  rollingWrap:        { background: "var(--surface)", border: "1px solid var(--border-danger)", borderRadius: "var(--radius-lg)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 },
+  rollingHeader:      { display: "flex", alignItems: "center", gap: 8 },
+  rollingTitle:       { fontFamily: "var(--font-display)", fontSize: 13, fontWeight: 700, color: "var(--text)", flex: 1 },
+  rollingCount:       { fontSize: 11, fontWeight: 600, color: "var(--warn)", background: "var(--warn-bg)", border: "1px solid var(--border-warning)", borderRadius: 20, padding: "2px 10px" },
+  rollingList:        { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 10 },
+  rollingCard:        { background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 },
+  rollingTop:         { display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
+  rollingLeft:        { display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 },
+  rollingRight:       { flexShrink: 0 },
+  rollingName:        { fontSize: 13, fontWeight: 700, color: "var(--text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  rollingMeta:        { fontSize: 11, color: "var(--text-mute)" },
+  daysChip:           { fontSize: 11, fontWeight: 700, border: "1px solid", borderRadius: 20, padding: "2px 10px", whiteSpace: "nowrap" },
+  rollingProject:     { display: "flex", alignItems: "center", gap: 5, fontSize: 11 },
+  rollingProjectLabel:{ color: "var(--text-mute)", fontWeight: 600 },
+  skillsRow:          { display: "flex", flexWrap: "wrap", gap: 4, marginTop: 2 },
+  skillChipPrimary:   { fontSize: 10, fontWeight: 600, color: "var(--signal)", background: "var(--signal-glow)", border: "1px solid var(--border-bright)", borderRadius: 4, padding: "2px 7px" },
+  skillChipSecondary: { fontSize: 10, color: "var(--text-dim)", background: "var(--border)", border: "1px solid var(--border)", borderRadius: 4, padding: "2px 7px" },
+
+  // Bench Panel
+  benchWrap:  { background: "var(--surface)", border: "1px solid var(--border-warning)", borderRadius: "var(--radius-lg)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 10 },
+  benchCard:  { background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: "var(--radius)", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 7 },
+  availChip:  { fontSize: 11, fontWeight: 700, color: "var(--ok)", background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.25)", borderRadius: 20, padding: "2px 10px", whiteSpace: "nowrap", flexShrink: 0 },
 
   // Matrix
   matrixWrap: { display: "flex", flexDirection: "column", gap: 10, flex: 1, minHeight: 0, overflow: "hidden" },

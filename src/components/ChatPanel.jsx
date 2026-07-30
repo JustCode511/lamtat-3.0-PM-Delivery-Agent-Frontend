@@ -23,12 +23,12 @@ const _BASE_THEME_VARS = {
   tertiaryColor: "#1a2030",
   fontSize: "13px",
   pie1: "#22d3ee", pie2: "#a78bfa", pie3: "#34d399",
-  pie4: "#fbbf24", pie5: "#f87171", pie6: "#fb923c",
+  pie4: "#f97316", pie5: "#f87171", pie6: "#fb923c",
   pie7: "#60a5fa", pie8: "#e879f9",
 };
 
 // Colors cycled through for each xychart rendered in this session
-const _XY_COLORS = ["#22d3ee", "#a78bfa", "#34d399", "#fbbf24", "#f87171", "#fb923c", "#60a5fa"];
+const _XY_COLORS = ["#22d3ee", "#a78bfa", "#34d399", "#f97316", "#f87171", "#fb923c", "#60a5fa"];
 let _xyColorIdx = 0;
 
 // Serialise all mermaid renders so m.initialize() + m.render() pairs never interleave
@@ -51,8 +51,8 @@ function parseHealthColor(health) {
     return { color: "#ef4444", bg: "rgba(239,68,68,0.10)", border: "rgba(239,68,68,0.3)", label: "AT RISK",
              badgeBg: "#dc2626", badgeColor: "#fff" };
   if (h.startsWith("yellow") || h.includes("medium") || h.includes("attention") || h.includes("watch") || h.includes("moderate") || h.includes("stable"))
-    return { color: "#eab308", bg: "rgba(234,179,8,0.10)", border: "rgba(234,179,8,0.3)", label: "WATCH",
-             badgeBg: "#ca8a04", badgeColor: "#fff" };
+    return { color: "#f97316", bg: "rgba(249,115,22,0.10)", border: "rgba(249,115,22,0.3)", label: "WATCH",
+             badgeBg: "#ea6c00", badgeColor: "#fff" };
   if (h.startsWith("green") || h.includes("on track") || h.includes("healthy"))
     return { color: "#34d399", bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.3)", label: "ON TRACK",
              badgeBg: "#059669", badgeColor: "#fff" };
@@ -67,7 +67,7 @@ function getPriorityColor(p) {
   const s = (p || "").toLowerCase();
   if (s === "highest") return "#ef4444";
   if (s === "high")    return "#f97316";
-  if (s === "medium")  return "#eab308";
+  if (s === "medium")  return "#f97316";
   if (s === "low")     return "#22d3ee";
   return "#9aa5b4";
 }
@@ -76,7 +76,7 @@ function getPriorityColor(p) {
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════
 
-const PROJECT_ACCENTS = ["#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#fb923c","#60a5fa"];
+const PROJECT_ACCENTS = ["#22d3ee","#a78bfa","#34d399","#f97316","#f87171","#fb923c","#60a5fa"];
 
 const AGENT_TIPS = [
   { icon: "📊", prompt: "Generate a status report for AABG", hint: "Full breakdown — progress, risks, next steps, all in one card" },
@@ -142,10 +142,10 @@ const INTENT_LABELS = {
 const STATUS_CFG = {
   "at risk":         { color: "#ef4444", bg: "rgba(239,68,68,0.10)",  border: "rgba(239,68,68,0.3)",  label: "AT RISK",     badgeBg: "#dc2626", badgeColor: "#fff" },
   "at_risk":         { color: "#ef4444", bg: "rgba(239,68,68,0.10)",  border: "rgba(239,68,68,0.3)",  label: "AT RISK",     badgeBg: "#dc2626", badgeColor: "#fff" },
-  "needs attention": { color: "#eab308", bg: "rgba(234,179,8,0.10)",  border: "rgba(234,179,8,0.3)",  label: "WATCH",       badgeBg: "#ca8a04", badgeColor: "#fff" },
+  "needs attention": { color: "#f97316", bg: "rgba(249,115,22,0.10)", border: "rgba(249,115,22,0.3)", label: "WATCH",       badgeBg: "#ea6c00", badgeColor: "#fff" },
   "on track":        { color: "#34d399", bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.3)", label: "ON TRACK",    badgeBg: "#059669", badgeColor: "#fff" },
   "healthy":         { color: "#34d399", bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.3)", label: "HEALTHY",     badgeBg: "#059669", badgeColor: "#fff" },
-  "watch":           { color: "#eab308", bg: "rgba(234,179,8,0.10)",  border: "rgba(234,179,8,0.3)",  label: "WATCH",       badgeBg: "#ca8a04", badgeColor: "#fff" },
+  "watch":           { color: "#f97316", bg: "rgba(249,115,22,0.10)", border: "rgba(249,115,22,0.3)", label: "WATCH",       badgeBg: "#ea6c00", badgeColor: "#fff" },
 };
 
 function getStatusCfg(status) {
@@ -518,7 +518,7 @@ function CompareProjectsMessage({ text }) {
     const v = val.toLowerCase();
     if (v.includes("on track") || v.includes("healthy")) return "#34d399";
     if (v.includes("at risk"))  return "#f87171";
-    if (v.includes("attention") || v.includes("watch")) return "#fbbf24";
+    if (v.includes("attention") || v.includes("watch")) return "#f97316";
     return "var(--text-secondary, #9aa5b4)";
   }
 
@@ -667,7 +667,7 @@ const TW_STATUS = {
   "📋": { label: "To Do",       color: "#9aa5b4", bg: "rgba(154,165,180,0.10)" },
   "•":  { label: "",            color: "#9aa5b4", bg: "rgba(154,165,180,0.10)" },
 };
-const PRIO_COLOR = { Highest:"#f87171", High:"#fb923c", Medium:"#fbbf24", Low:"#22d3ee", Lowest:"#6b7688" };
+const PRIO_COLOR = { Highest:"#f87171", High:"#fb923c", Medium:"#f97316", Low:"#22d3ee", Lowest:"#6b7688" };
 
 function initials(name) {
   return name.split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || "").join("");
@@ -723,7 +723,7 @@ function TeamWorkloadMessage({ text }) {
 
   if (!memberBlocks.length) return <DefaultMessage text={text} />;
 
-  const AVATAR_COLORS = ["#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#60a5fa"];
+  const AVATAR_COLORS = ["#22d3ee","#a78bfa","#34d399","#f97316","#f87171","#60a5fa"];
 
   return (
     <div className="tw-wrap">
@@ -754,7 +754,7 @@ function TeamWorkloadMessage({ text }) {
                   <div className="tw-name">{member.name}</div>
                   <div className="tw-count">{member.taskCount} task{member.taskCount !== 1 ? "s" : ""}{member.doneCount > 0 ? ` · ${member.doneCount} done` : ""}</div>
                 </div>
-                <div className="tw-pct" style={{ color: pct >= 75 ? "#34d399" : pct >= 40 ? "#fbbf24" : "#f87171" }}>{pct}%</div>
+                <div className="tw-pct" style={{ color: pct >= 75 ? "#34d399" : pct >= 40 ? "#f97316" : "#f87171" }}>{pct}%</div>
               </div>
 
               {/* Progress bar */}
@@ -970,7 +970,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
         {messages.map((msg, i) => (
           <div key={i} className={`msg-row ${msg.role}`}>
             {msg.role === "user" ? (
-              <div className="user-bubble" style={{ background: accent, color: "#06222b" }}>{msg.text}</div>
+              <div className="user-bubble" style={{ background: accent + "28", border: `1px solid ${accent}55`, color: "var(--text)" }}>{msg.text}</div>
             ) : (
               <div className="assistant-bubble">
                 <div className="agent-avatar" style={{ background: accent + "22", color: accent }}>AI</div>
