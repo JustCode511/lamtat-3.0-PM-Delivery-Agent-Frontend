@@ -16,7 +16,7 @@ const USE_MOCK_FALLBACK = false;
 
 function authHeaders() {
   const token = localStorage.getItem("token");
-  return token ? { "Authorization": `Bearer ${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
 async function request(path, options = {}) {
@@ -29,7 +29,18 @@ async function request(path, options = {}) {
         ...(options.headers || {}),
       },
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      // Surface the backend's error detail (e.g. "Username already exists")
+      // so the UI can show something useful instead of a bare status code.
+      let message = `HTTP ${res.status}`;
+      try {
+        const body = await res.json();
+        if (typeof body?.detail === "string") message = body.detail;
+      } catch { /* non-JSON error body — keep the status message */ }
+      const e = new Error(message);
+      e.status = res.status;
+      throw e;
+    }
     return await res.json();
   } catch (err) {
     if (USE_MOCK_FALLBACK) return mockFor(path, options);
@@ -52,6 +63,11 @@ export async function register(username, password) {
   });
 }
 
+// Revoke the current token server-side so it can't be reused after sign-out.
+export async function logout() {
+  return request("/auth/logout", { method: "POST" });
+}
+
 /* ---------- PM module ---------- */
 export async function getProjects() {
   return request("/pm/projects");
@@ -71,6 +87,15 @@ export async function getDashboard(projectKey) {
 
 export async function getActivity(limit = 25) {
   return request(`/pm/activity?limit=${limit}`);
+}
+
+/* ---------- Conversation history (Claude-style sidebar) ---------- */
+export async function getConversations() {
+  return request("/pm/conversations");
+}
+
+export async function getConversation(sessionId) {
+  return request(`/pm/conversations/${encodeURIComponent(sessionId)}`);
 }
 
 /* ---------- Chat (works for any module) ---------- */

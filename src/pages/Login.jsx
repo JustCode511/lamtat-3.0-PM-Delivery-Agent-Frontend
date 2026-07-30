@@ -22,8 +22,18 @@ export default function Login() {
       const data = await fn(username, password);
       signIn(data.token || "session", data.username || username);
       navigate("/");
-    } catch {
-      setError(mode === "login" ? "Invalid credentials." : "Could not create account.");
+    } catch (err) {
+      const status = err?.status;
+      if (mode === "login") {
+        // Login only validates credentials — never surface the registration policy here.
+        setError(status === 401 || status === 422
+          ? "Invalid username or password."
+          : "Something went wrong. Please try again.");
+      } else {
+        if (status === 409) setError("That username is already taken.");
+        else if (status === 422) setError("Your password should be at least 6 characters, and username at least 3.");
+        else setError("Could not create account.");
+      }
     } finally {
       setBusy(false);
     }
@@ -82,7 +92,19 @@ export default function Login() {
             />
           </div>
 
-          {error && <div style={s.error}>{error}</div>}
+          {error && (
+            <div style={s.error} className="fade-up">
+              <span style={s.errorIcon}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </span>
+              <span style={s.errorText}>{error}</span>
+            </div>
+          )}
 
           <button style={{ ...s.btn, opacity: busy ? 0.6 : 1 }} type="submit" disabled={busy}>
             {busy ? "Authenticating…" : mode === "login" ? "Sign in →" : "Create account →"}
@@ -94,14 +116,22 @@ export default function Login() {
           {" "}
           <button
             style={s.switchBtn}
-            onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+            onClick={() => {
+              setMode(mode === "login" ? "register" : "login");
+              setError("");
+              setUsername("");
+              setPassword("");
+            }}
           >
             {mode === "login" ? "Create one" : "Sign in"}
           </button>
         </div>
       </div>
 
-      <p style={s.footnote} className="mono">pm-agent · delivery intelligence</p>
+      <div style={s.footWrap}>
+        <p style={s.footnote} className="mono">Project Delivery Intelligence, powered by AI</p>
+        <p style={s.footMeta} className="mono">Accenture × AWS · AABG-FY26</p>
+      </div>
     </div>
   );
 }
@@ -183,10 +213,19 @@ const s = {
     transition: "border-color 0.15s, box-shadow 0.15s",
   },
   error: {
-    background: "rgba(248,113,113,0.08)",
-    border: "1px solid rgba(248,113,113,0.3)",
-    color: "var(--risk)", fontSize: "13px",
-    padding: "10px 13px", borderRadius: "8px",
+    display: "flex", alignItems: "flex-start", gap: "10px",
+    background: "rgba(248,113,113,0.09)",
+    border: "1px solid rgba(248,113,113,0.28)",
+    borderRadius: "10px",
+    padding: "11px 13px",
+  },
+  errorIcon: {
+    flexShrink: 0, marginTop: "1px",
+    color: "#f87171", display: "flex", alignItems: "center",
+  },
+  errorText: {
+    flex: 1, fontSize: "13px", lineHeight: 1.5,
+    color: "#fca5a5", fontWeight: 500,
   },
   btn: {
     background: "linear-gradient(135deg, #A100FF 0%, #c84bff 100%)",
@@ -207,8 +246,15 @@ const s = {
     background: "none", border: "none", cursor: "pointer",
     fontFamily: "var(--font-body)", fontSize: "13px",
   },
-  footnote: {
+  footWrap: {
     position: "relative", zIndex: 1,
+    display: "flex", flexDirection: "column", alignItems: "center", gap: "5px",
+  },
+  footnote: {
     fontSize: "11px", color: "var(--text-mute)", textAlign: "center",
+  },
+  footMeta: {
+    fontSize: "10px", color: "var(--text-mute)", opacity: 0.65,
+    letterSpacing: "0.09em", textAlign: "center",
   },
 };

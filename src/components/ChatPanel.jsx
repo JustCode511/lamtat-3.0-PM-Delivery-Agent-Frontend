@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useId } from "react";
-import { streamChat, sendToLeadership } from "../api/client.js";
+import { streamChat, sendToLeadership, getConversations, getConversation } from "../api/client.js";
 import "./ChatPanel.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -44,6 +44,19 @@ function _fixIntegerTicks(svgStr) {
 // ═══════════════════════════════════════════════════════════════════════
 
 function clean(str) { return (str || "").replace(/[*_`]/g, "").trim(); }
+
+// Compact relative time for the history sidebar ("just now", "5m ago", …)
+function relTime(iso) {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const s = Math.floor((Date.now() - then) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60); if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24); if (d < 7) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
 
 function parseHealthColor(health) {
   const h = (health || "").toLowerCase();
@@ -420,7 +433,7 @@ function PPTMessage({ text }) {
     try {
       const token = localStorage.getItem("token");
       const res = await fetch(apiUrl, {
-        headers: token ? { "X-API-Key": token } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const blob = await res.blob();
@@ -881,11 +894,45 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
   const [input,       setInput]       = useState("");
   const [busy,        setBusy]        = useState(false);
   const [fullscreen,  setFullscreen]  = useState(false);
-  const sessionId   = useRef(`${moduleId}-${Math.random().toString(36).slice(2, 10)}`);
+  const [sessionId,   setSessionId]   = useState(() => `${moduleId}-${Math.random().toString(36).slice(2, 10)}`);
+  const [conversations, setConversations] = useState([]);
+  const [loadingConvos, setLoadingConvos] = useState(false);
   const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy]);
+
+  // ── History sidebar ────────────────────────────────────────────────
+  const refreshConversations = useCallback(async () => {
+    setLoadingConvos(true);
+    try {
+      const data = await getConversations();
+      // Only this module's chats (session ids are prefixed with the module id).
+      const list = (data.conversations || []).filter(c => c.session_id.startsWith(`${moduleId}-`));
+      setConversations(list);
+    } catch { /* not logged in yet / no history — leave list empty */ }
+    finally { setLoadingConvos(false); }
+  }, [moduleId]);
+
+  function newChat() {
+    setSessionId(`${moduleId}-${Math.random().toString(36).slice(2, 10)}`);
+    setMessages([{ role: "assistant", text: greeting, ui_hint: "default" }]);
+  }
+
+  async function loadConversation(sid) {
+    if (sid === sessionId) return;
+    try {
+      const data = await getConversation(sid);
+      const mapped = (data.messages || []).map(m => ({
+        role: m.role, text: m.content, ui_hint: m.ui_hint || "default",
+      }));
+      setSessionId(sid);
+      setMessages(mapped.length ? mapped : [{ role: "assistant", text: greeting, ui_hint: "default" }]);
+    } catch { /* couldn't load — leave current chat as-is */ }
+  }
+
+  // Refresh the history list whenever the panel is expanded to fullscreen.
+  useEffect(() => { if (fullscreen) refreshConversations(); }, [fullscreen, refreshConversations]);
 
   const send = useCallback(async () => {
     const text = input.trim();
@@ -903,7 +950,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
     try {
       await streamChat(
         moduleId,
-        sessionId.current,
+        sessionId,
         text,
         // onDelta — append chunk to the streaming bubble
         (delta) => {
@@ -931,8 +978,10 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
     } finally {
       setBusy(false);
       textareaRef.current?.focus();
+      // A new/updated conversation may now exist — refresh the sidebar.
+      refreshConversations();
     }
-  }, [input, busy, moduleId]);
+  }, [input, busy, moduleId, sessionId, refreshConversations]);
 
   function onKey(e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }
 
@@ -940,6 +989,36 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
 
   return (
     <div className={`chat-wrap${fullscreen ? " chat-fullscreen" : ""}`}>
+      {/* History sidebar — only in fullscreen (Claude-style) */}
+      {fullscreen && (
+        <aside className="chat-history">
+          <div className="ch-head">
+            <span className="ch-title">Chats</span>
+            <button className="ch-new" onClick={newChat} title="Start a new chat">+ New</button>
+          </div>
+          <div className="ch-list">
+            {loadingConvos ? (
+              <div className="ch-empty">Loading…</div>
+            ) : conversations.length === 0 ? (
+              <div className="ch-empty">No conversations yet</div>
+            ) : (
+              conversations.map(cv => (
+                <button
+                  key={cv.session_id}
+                  className={`ch-item${cv.session_id === sessionId ? " active" : ""}`}
+                  onClick={() => loadConversation(cv.session_id)}
+                  style={cv.session_id === sessionId ? { borderColor: accent + "66" } : undefined}
+                >
+                  <span className="ch-item-title">{cv.title}</span>
+                  <span className="ch-item-time">{relTime(cv.updated_at)}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+      )}
+
+      <div className="chat-main">
       {/* Header */}
       <div className="chat-head">
         <span className="chat-dot" style={{ background: accent }} />
@@ -1072,6 +1151,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
