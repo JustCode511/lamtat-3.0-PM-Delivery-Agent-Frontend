@@ -131,7 +131,7 @@ export default function CopilotPanel({ accent = "#22d3ee", greeting }) {
     typeof localStorage !== "undefined" ? localStorage.getItem("token") || "" : "";
 
   return (
-    <CopilotKit runtimeUrl="/copilotkit" headers={{ "X-API-Key": token }}>
+    <CopilotKit runtimeUrl="/copilotkit" headers={{ Authorization: `Bearer ${token}` }}>
       <CopilotPanelInner accent={accent} greeting={greeting} />
     </CopilotKit>
   );

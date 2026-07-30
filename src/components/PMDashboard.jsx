@@ -136,7 +136,7 @@ export default function PMDashboard({ accentHex = "#22d3ee" }) {
   );
 
   return (
-    <div style={s.wrap}>
+    <div style={s.overviewWrap}>
 
       {/* 1 ── TOP BAR */}
       <div style={s.topBar}>
@@ -800,6 +800,10 @@ function RiskCard({ risk, accentHex }) {
 
 const s = {
   wrap: { height:"100%", overflowY:"auto", paddingRight:2, display:"flex", flexDirection:"column", gap:14 },
+  // Overview root: a flex column that fills the dashboard column height so the
+  // activity feed can flex to fit any screen — instead of a fixed-height box
+  // that leaves a gap on large desktops and double-scrolls on laptops.
+  overviewWrap: { height:"100%", paddingRight:2, display:"flex", flexDirection:"column", gap:14, minHeight:0 },
 
   /* top bar */
   topBar: { display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:8 },
@@ -963,14 +967,15 @@ const s = {
     borderLeft:"3px solid", borderRadius:12, overflow:"hidden",
   },
   /* activity feed */
-  activitySection: { display: "flex", flexDirection: "column", gap: 12, marginTop: 4 },
+  activitySection: { display: "flex", flexDirection: "column", gap: 12, marginTop: 4, flex: 1, minHeight: 0 },
   activityWrap: {
     background: "var(--surface-1)", border: "1px solid var(--border)",
     borderRadius: 12, overflow: "hidden",
+    flex: 1, minHeight: 0, display: "flex", flexDirection: "column",
   },
   activityTimeline: {
     display: "flex", flexDirection: "column",
-    maxHeight: 340, overflowY: "auto",
+    flex: 1, minHeight: 0, overflowY: "auto",
   },
   activityEmpty: {
     padding: "20px 16px", fontSize: 12,
