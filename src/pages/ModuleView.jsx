@@ -6,6 +6,14 @@ import PMDashboard from "../components/PMDashboard.jsx";
 
 const ACCENT_HEX = { pm: "#22d3ee", talent: "#a78bfa", code: "#34d399", finops: "#fbbf24" };
 
+// Up to two initials for the header avatar ("Parth Kansara" -> "PK", "chaithanya" -> "CH").
+function initials(name) {
+  if (!name) return "?";
+  const parts = String(name).trim().split(/\s+/);
+  if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return String(name).slice(0, 2).toUpperCase();
+}
+
 const GREETINGS = {
   pm:     "Hi — I'm your PM Delivery agent. Ask me about any project's status, risks, or how to resolve them. Try: \"What's at risk in AABGFY26?\"",
   talent: "Hi — I'm your Talent Management agent. Ask me about skills, capacity, and matching people to work.",
@@ -45,7 +53,12 @@ export default function ModuleView() {
           )}
         </div>
         <div style={s.right}>
-          <span style={s.userLabel} className="mono">{user}</span>
+          <div style={s.userChip} title={user}>
+            <div style={{ ...s.avatar, background: accentHex + "22", color: accentHex, border: `1px solid ${accentHex}55` }}>
+              {initials(user)}
+            </div>
+            <span style={s.userLabel} className="mono">{user}</span>
+          </div>
           <button className="btn-ghost" onClick={() => { signOut(); navigate("/login"); }}>
             Sign out
           </button>
@@ -116,6 +129,13 @@ const s = {
   },
   modName: { fontFamily: "var(--font-display)", fontWeight: 600, fontSize: "14px", color: "var(--text)" },
   right: { display: "flex", alignItems: "center", gap: "12px" },
+  userChip: { display: "flex", alignItems: "center", gap: "8px" },
+  avatar: {
+    width: "28px", height: "28px", borderRadius: "50%",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: "11px", fontWeight: 800, fontFamily: "var(--font-display)",
+    flexShrink: 0, letterSpacing: "0.02em",
+  },
   userLabel: { fontSize: "12px", color: "var(--text-mute)" },
 
   body: {
