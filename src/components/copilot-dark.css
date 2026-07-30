@@ -5,15 +5,15 @@
 
 /* ── CSS custom properties ── */
 :root {
-  --copilot-kit-primary-color:                   #22d3ee;
-  --copilot-kit-background-color:                #0d1117;
-  --copilot-kit-secondary-color:                 #161b26;
-  --copilot-kit-separator-color:                 rgba(42,49,64,0.8);
+  --copilot-kit-primary-color:                   var(--signal);
+  --copilot-kit-background-color:                var(--bg);
+  --copilot-kit-secondary-color:                 var(--surface);
+  --copilot-kit-separator-color:                 color-mix(in srgb, var(--border) 80%, transparent);
   --copilot-kit-font-size:                       13px;
-  --copilot-kit-response-button-color:           #22d3ee;
-  --copilot-kit-response-button-background-color:rgba(34,211,238,0.08);
-  --copilot-kit-scrollbar-color:                 rgba(42,49,64,0.6);
-  --copilot-kit-scrollbar-thumb-color:           rgba(42,49,64,0.9);
+  --copilot-kit-response-button-color:           var(--signal);
+  --copilot-kit-response-button-background-color:color-mix(in srgb, var(--signal) 8%, transparent);
+  --copilot-kit-scrollbar-color:                 color-mix(in srgb, var(--border) 60%, transparent);
+  --copilot-kit-scrollbar-thumb-color:           color-mix(in srgb, var(--border) 90%, transparent);
 }
 
 /* ── Panel layout ── */
@@ -64,13 +64,13 @@
 }
 .ck-scroll::-webkit-scrollbar { width: 4px; }
 .ck-scroll::-webkit-scrollbar-track  { background: transparent; }
-.ck-scroll::-webkit-scrollbar-thumb  { background: rgba(42,49,64,0.8); border-radius: 2px; }
+.ck-scroll::-webkit-scrollbar-thumb  { background: color-mix(in srgb, var(--border) 80%, transparent); border-radius: 2px; }
 
 /* ── Input area ── */
 .ck-chat .copilotKitInput {
-  background:    rgba(16,21,32,0.97)          !important;
+  background:    color-mix(in srgb, var(--bg) 97%, transparent)          !important;
   border:        none                          !important;
-  border-top:    1px solid rgba(42,49,64,0.6) !important;
+  border-top:    1px solid color-mix(in srgb, var(--border) 60%, transparent) !important;
   border-radius: 0 0 var(--radius-lg,14px) var(--radius-lg,14px) !important;
   padding:       10px 12px 12px               !important;
 }
@@ -83,8 +83,8 @@
 /* Textarea / text field */
 .ck-chat .copilotKitInputControls textarea,
 .ck-chat .copilotKitInputControls input[type="text"] {
-  background:    rgba(29,35,48,0.9)          !important;
-  border:        1px solid rgba(42,49,64,0.7)!important;
+  background:    color-mix(in srgb, var(--surface-2) 90%, transparent)          !important;
+  border:        1px solid color-mix(in srgb, var(--border) 70%, transparent)!important;
   border-radius: 10px                        !important;
   color:         var(--text, #e2e8f0)        !important;
   font-size:     13px                        !important;
@@ -97,9 +97,9 @@
 
 .ck-chat .copilotKitInputControls textarea:focus,
 .ck-chat .copilotKitInputControls input[type="text"]:focus {
-  border-color: rgba(34,211,238,0.45)         !important;
+  border-color: color-mix(in srgb, var(--signal) 45%, transparent)         !important;
   outline:      none                          !important;
-  box-shadow:   0 0 0 3px rgba(34,211,238,0.08) !important;
+  box-shadow:   0 0 0 3px color-mix(in srgb, var(--signal) 8%, transparent) !important;
 }
 
 .ck-chat .copilotKitInputControls textarea::placeholder,
@@ -110,10 +110,10 @@
 /* Send / submit button */
 .ck-chat button[data-testid="send-button"],
 .ck-chat .copilotKitSendButton {
-  background:    rgba(34,211,238,0.12)         !important;
-  border:        1px solid rgba(34,211,238,0.3)!important;
+  background:    color-mix(in srgb, var(--signal) 12%, transparent)         !important;
+  border:        1px solid color-mix(in srgb, var(--signal) 30%, transparent)!important;
   border-radius: 10px                          !important;
-  color:         #22d3ee                       !important;
+  color:         var(--signal)                       !important;
   transition:    background 0.15s, border-color 0.15s !important;
   min-width:     38px                          !important;
   height:        38px                          !important;
@@ -121,8 +121,8 @@
 
 .ck-chat button[data-testid="send-button"]:hover,
 .ck-chat .copilotKitSendButton:hover {
-  background:    rgba(34,211,238,0.22)         !important;
-  border-color:  rgba(34,211,238,0.55)         !important;
+  background:    color-mix(in srgb, var(--signal) 22%, transparent)         !important;
+  border-color:  color-mix(in srgb, var(--signal) 55%, transparent)         !important;
 }
 
 .ck-chat button[data-testid="send-button"]:disabled,
@@ -134,8 +134,8 @@
 /* Suggestion chips */
 .ck-chat .copilotKitSuggestion,
 .ck-chat [class*="suggestion"] {
-  background:    rgba(29,35,48,0.9)            !important;
-  border:        1px solid rgba(42,49,64,0.7)  !important;
+  background:    color-mix(in srgb, var(--surface-2) 90%, transparent)            !important;
+  border:        1px solid color-mix(in srgb, var(--border) 70%, transparent)  !important;
   color:         var(--text-dim, #94a3b8)      !important;
   border-radius: 8px                           !important;
   font-size:     12px                          !important;
@@ -146,15 +146,15 @@
 
 .ck-chat .copilotKitSuggestion:hover,
 .ck-chat [class*="suggestion"]:hover {
-  border-color: rgba(34,211,238,0.4) !important;
+  border-color: color-mix(in srgb, var(--signal) 40%, transparent) !important;
   color:        var(--text, #e2e8f0) !important;
 }
 
 /* Stop / regenerate buttons */
 .ck-chat [class*="stopGeneration"],
 .ck-chat [class*="regenerate"] {
-  background:    rgba(29,35,48,0.8)            !important;
-  border:        1px solid rgba(42,49,64,0.7)  !important;
+  background:    color-mix(in srgb, var(--surface-2) 80%, transparent)            !important;
+  border:        1px solid color-mix(in srgb, var(--border) 70%, transparent)  !important;
   color:         var(--text-dim, #94a3b8)      !important;
   border-radius: 8px                           !important;
   font-size:     11px                          !important;
@@ -163,4 +163,7 @@
 /* Any stray light-mode backgrounds inside the chat window */
 .ck-chat [class*="copilotKit"] {
   color-scheme: dark;
+}
+:root[data-theme="light"] .ck-chat [class*="copilotKit"] {
+  color-scheme: light;
 }

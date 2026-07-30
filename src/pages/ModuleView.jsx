@@ -1,10 +1,10 @@
 import { useParams, useNavigate, Navigate } from "react-router-dom";
 import { MODULES } from "../modules.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { alpha } from "../utils/color.js";
 import ChatPanel from "../components/ChatPanel.jsx";
 import PMDashboard from "../components/PMDashboard.jsx";
-
-const ACCENT_HEX = { pm: "#22d3ee", talent: "#a78bfa", code: "#34d399", finops: "#fbbf24" };
+import ThemeToggle from "../components/ThemeToggle.jsx";
 
 // Up to two initials for the header avatar ("Parth Kansara" -> "PK", "chaithanya" -> "CH").
 function initials(name) {
@@ -29,7 +29,7 @@ export default function ModuleView() {
 
   if (!mod) return <Navigate to="/" replace />;
 
-  const accentHex = ACCENT_HEX[mod.id] || "#22d3ee";
+  const accentHex = mod.accent || "var(--signal)";
 
   return (
     <div style={s.page}>
@@ -42,7 +42,7 @@ export default function ModuleView() {
           </button>
           <span style={s.sep}>/</span>
           <span
-            style={{ ...s.chip, color: accentHex, borderColor: accentHex + "45", background: accentHex + "10" }}
+            style={{ ...s.chip, color: accentHex, borderColor: alpha(accentHex, 27), background: alpha(accentHex, 6) }}
             className="mono"
           >
             {mod.code}
@@ -54,11 +54,12 @@ export default function ModuleView() {
         </div>
         <div style={s.right}>
           <div style={s.userChip} title={user}>
-            <div style={{ ...s.avatar, background: accentHex + "22", color: accentHex, border: `1px solid ${accentHex}55` }}>
+            <div style={{ ...s.avatar, background: alpha(accentHex, 13), color: accentHex, border: `1px solid ${alpha(accentHex, 33)}` }}>
               {initials(user)}
             </div>
             <span style={s.userLabel} className="mono">{user}</span>
           </div>
+          <ThemeToggle />
           <button className="btn-ghost" onClick={() => { signOut(); navigate("/login"); }}>
             Sign out
           </button>
@@ -83,9 +84,9 @@ export default function ModuleView() {
 function ComingSoon({ mod, accentHex }) {
   return (
     <div style={s.soon}>
-      <div style={{ ...s.soonGlow, background: `radial-gradient(ellipse, ${accentHex}15 0%, transparent 70%)` }} />
+      <div style={{ ...s.soonGlow, background: `radial-gradient(ellipse, ${alpha(accentHex, 8)} 0%, transparent 70%)` }} />
       <span
-        style={{ ...s.soonChip, color: accentHex, borderColor: accentHex + "45", background: accentHex + "10" }}
+        style={{ ...s.soonChip, color: accentHex, borderColor: alpha(accentHex, 27), background: alpha(accentHex, 6) }}
         className="mono"
       >
         {mod.code}
@@ -106,7 +107,7 @@ const s = {
   header: {
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: "12px 24px",
-    borderBottom: "1px solid rgba(42,49,64,0.7)",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 70%, transparent)",
     flexShrink: 0, zIndex: 10,
   },
   left: { display: "flex", alignItems: "center", gap: "10px" },
@@ -118,7 +119,7 @@ const s = {
     background: "none", border: "none", cursor: "pointer",
   },
   homeMark: {
-    background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+    background: "linear-gradient(135deg, var(--signal), var(--talent))",
     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
     backgroundClip: "text", fontSize: "16px",
   },
@@ -144,9 +145,9 @@ const s = {
     gap: "14px", padding: "14px", minHeight: 0,
   },
   dashCol: {
-    background: "rgba(22,27,38,0.8)",
+    background: "color-mix(in srgb, var(--surface) 80%, transparent)",
     backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-    border: "1px solid rgba(42,49,64,0.6)",
+    border: "1px solid color-mix(in srgb, var(--border) 60%, transparent)",
     borderRadius: "var(--radius-lg)",
     padding: "24px", minHeight: 0, overflow: "hidden",
     position: "relative",
@@ -171,7 +172,7 @@ const s = {
     marginBottom: "22px", position: "relative", zIndex: 1,
   },
   soonNote: {
-    background: "rgba(29,35,48,0.8)",
+    background: "color-mix(in srgb, var(--surface-2) 80%, transparent)",
     border: "1px solid var(--border)",
     borderRadius: "var(--radius)",
     padding: "14px 16px",

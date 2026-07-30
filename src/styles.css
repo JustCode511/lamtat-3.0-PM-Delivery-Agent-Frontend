@@ -50,6 +50,19 @@
   --code: #34d399;
   --finops: #fbbf24;
 
+  /* Extra semantic colors used across chat/dashboard chrome */
+  --orange: #f97316;
+  --blue: #60a5fa;
+
+  /* RGB triplet (not a color) used as `rgba(var(--overlay-rgb), X)` so every
+     "white overlay on dark" tint (chip backgrounds, faint text, hairlines)
+     becomes a matching "ink overlay on light" tint in light mode — same
+     alpha ramp, opposite base color. */
+  --overlay-rgb: 255, 255, 255;
+
+  /* Surfaces that are one step lighter than --surface-2, for hover states */
+  --surface-hover: #212c42;
+
   --radius: 6px;
   --radius-lg: 12px;
 
@@ -57,6 +70,71 @@
   --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
+
+/* ============================================================
+   Light theme — same tokens, flipped. Toggled via data-theme on <html>.
+   ============================================================ */
+:root[data-theme="light"] {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef0f4;
+  --border: #e1e4ea;
+  --border-bright: #c7ccd8;
+
+  --text: #10151f;
+  --text-dim: #495267;
+  --text-mute: #6b7280;
+
+  /* Darkened so text/icons/borders keep readable contrast on a white page */
+  --signal: #0e7490;
+  --signal-dim: #155e75;
+  --signal-glow: rgba(14, 116, 144, 0.12);
+
+  --ok: #059669;
+  --ok-bg: rgba(5, 150, 105, 0.10);
+  --warn: #b45309;
+  --warn-bg: rgba(180, 83, 9, 0.10);
+  --risk: #dc2626;
+  --risk-bg: rgba(220, 38, 38, 0.10);
+
+  --text-danger:    #dc2626;
+  --bg-danger:      rgba(220, 38, 38, 0.06);
+  --bg-danger-pill: rgba(220, 38, 38, 0.12);
+  --border-danger:  rgba(220, 38, 38, 0.28);
+  --text-warning:   #b45309;
+  --bg-warning:     rgba(180, 83, 9, 0.08);
+  --border-warning: rgba(180, 83, 9, 0.28);
+  --text-success:   #059669;
+  --bg-success:     rgba(5, 150, 105, 0.08);
+  --border-success: rgba(5, 150, 105, 0.28);
+  --text-secondary: #495267;
+  --text-muted:     #6b7280;
+  --surface-1:      #ffffff;
+  --border-strong:  #c7ccd8;
+
+  --pm: #0e7490;
+  --talent: #7c3aed;
+  --code: #059669;
+  --finops: #b45309;
+  --orange: #c2410c;
+  --blue: #2563eb;
+
+  --overlay-rgb: 15, 23, 42;
+  --surface-hover: #e4e8ef;
+
+  --gradient-brand: linear-gradient(135deg, #0e7490 0%, #7c3aed 100%);
+  --shadow-glow-sm: 0 0 20px rgba(14, 116, 144, 0.08);
+  --shadow-glow-md: 0 0 40px rgba(14, 116, 144, 0.06), 0 0 80px rgba(124, 58, 237, 0.04);
+  --shadow-card: 0 4px 20px rgba(15, 23, 42, 0.07), 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+:root[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse 70% 50% at 8% 10%, rgba(14,116,144,0.05), transparent),
+    radial-gradient(ellipse 55% 45% at 92% 90%, rgba(124,58,237,0.05), transparent);
+}
+
+:root[data-theme="light"] body::before { opacity: 0.35; }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -186,7 +264,7 @@ body {
 
 /* ── Glass surface ─────────────────────────────────────────── */
 .glass {
-  background: rgba(22,27,38,0.75);
+  background: color-mix(in srgb, var(--surface) 75%, transparent);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -235,3 +313,18 @@ body {
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius);
 }
+
+/* ── Theme toggle ──────────────────────────────────────────── */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border-bright);
+  color: var(--text-dim);
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.theme-toggle:hover { border-color: var(--signal); color: var(--signal); background: var(--signal-glow); }

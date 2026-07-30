@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { login, register } from "../api/client.js";
+import ThemeToggle from "../components/ThemeToggle.jsx";
 
 export default function Login() {
   const [mode, setMode] = useState("login");
@@ -39,14 +40,16 @@ export default function Login() {
     }
   }
 
-  function focusBorder(e)  { e.target.style.borderColor = "rgba(34,211,238,0.55)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,211,238,0.08)"; }
-  function blurBorder(e)   { e.target.style.borderColor = "rgba(58,67,86,0.7)";    e.target.style.boxShadow = "none"; }
+  function focusBorder(e)  { e.target.style.borderColor = "color-mix(in srgb, var(--signal) 55%, transparent)"; e.target.style.boxShadow = "0 0 0 3px color-mix(in srgb, var(--signal) 8%, transparent)"; }
+  function blurBorder(e)   { e.target.style.borderColor = "color-mix(in srgb, var(--border-bright) 70%, transparent)";    e.target.style.boxShadow = "none"; }
 
   return (
     <div style={s.page}>
       {/* Ambient radial glows */}
       <div style={s.glowA} />
       <div style={s.glowB} />
+
+      <ThemeToggle style={{ position: "fixed", top: 20, right: 20, zIndex: 2 }} />
 
       {/* Glass card */}
       <div style={s.card} className="fade-up">
@@ -151,25 +154,25 @@ const s = {
   glowA: {
     position: "fixed", top: "-25%", left: "-15%",
     width: "65vw", height: "65vh",
-    background: "radial-gradient(ellipse, rgba(34,211,238,0.1) 0%, transparent 70%)",
+    background: "radial-gradient(ellipse, color-mix(in srgb, var(--signal) 10%, transparent) 0%, transparent 70%)",
     pointerEvents: "none", zIndex: 0,
   },
   glowB: {
     position: "fixed", bottom: "-25%", right: "-10%",
     width: "55vw", height: "55vh",
-    background: "radial-gradient(ellipse, rgba(167,139,250,0.1) 0%, transparent 70%)",
+    background: "radial-gradient(ellipse, color-mix(in srgb, var(--talent) 10%, transparent) 0%, transparent 70%)",
     pointerEvents: "none", zIndex: 0,
   },
   card: {
     position: "relative", zIndex: 1,
     width: "100%", maxWidth: "420px",
-    background: "rgba(22,27,38,0.85)",
+    background: "color-mix(in srgb, var(--surface) 85%, transparent)",
     backdropFilter: "blur(24px)",
     WebkitBackdropFilter: "blur(24px)",
-    border: "1px solid rgba(58,67,86,0.7)",
+    border: "1px solid color-mix(in srgb, var(--border-bright) 70%, transparent)",
     borderRadius: "20px",
     padding: "40px 36px",
-    boxShadow: "0 8px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.06)",
+    boxShadow: "0 8px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(var(--overlay-rgb), 0.03), inset 0 1px 0 rgba(var(--overlay-rgb), 0.06)",
   },
   brand: {
     display: "flex", alignItems: "center", gap: "10px",
@@ -177,7 +180,7 @@ const s = {
   },
   mark: {
     fontSize: "20px",
-    background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+    background: "linear-gradient(135deg, var(--signal), var(--talent))",
     WebkitBackgroundClip: "text",
     WebkitTextFillColor: "transparent",
     backgroundClip: "text",
@@ -190,7 +193,7 @@ const s = {
   title: {
     fontSize: "32px", fontFamily: "var(--font-display)", fontWeight: 700,
     marginBottom: "6px", letterSpacing: "-0.02em",
-    background: "linear-gradient(135deg, #e6edf3 20%, #9aa5b4 100%)",
+    background: "linear-gradient(135deg, var(--text) 20%, var(--text-dim) 100%)",
     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
     backgroundClip: "text",
   },
@@ -202,8 +205,8 @@ const s = {
     letterSpacing: "0.06em", textTransform: "uppercase",
   },
   input: {
-    background: "rgba(13,17,23,0.8)",
-    border: "1px solid rgba(58,67,86,0.7)",
+    background: "color-mix(in srgb, var(--bg) 80%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--border-bright) 70%, transparent)",
     borderRadius: "8px",
     padding: "12px 14px",
     outline: "none",
@@ -214,27 +217,27 @@ const s = {
   },
   error: {
     display: "flex", alignItems: "flex-start", gap: "10px",
-    background: "rgba(248,113,113,0.09)",
-    border: "1px solid rgba(248,113,113,0.28)",
+    background: "color-mix(in srgb, var(--risk) 9%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--risk) 28%, transparent)",
     borderRadius: "10px",
     padding: "11px 13px",
   },
   errorIcon: {
     flexShrink: 0, marginTop: "1px",
-    color: "#f87171", display: "flex", alignItems: "center",
+    color: "var(--risk)", display: "flex", alignItems: "center",
   },
   errorText: {
     flex: 1, fontSize: "13px", lineHeight: 1.5,
-    color: "#fca5a5", fontWeight: 500,
+    color: "var(--risk)", fontWeight: 500,
   },
   btn: {
-    background: "linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%)",
+    background: "linear-gradient(135deg, var(--signal) 0%, #0ea5e9 100%)",
     color: "#06222b", fontWeight: 700,
     padding: "13px", borderRadius: "8px",
     fontSize: "14px", fontFamily: "var(--font-body)",
     cursor: "pointer", border: "none", marginTop: "4px",
     letterSpacing: "0.01em",
-    boxShadow: "0 4px 20px rgba(34,211,238,0.25)",
+    boxShadow: "0 4px 20px color-mix(in srgb, var(--signal) 25%, transparent)",
     transition: "filter 0.15s, transform 0.07s",
   },
   switchRow: {

@@ -5,6 +5,7 @@ import "@copilotkit/react-ui/styles.css";
 import "./copilot-dark.css";
 import "./ChatPanel.css";
 import { MessageRenderer } from "./ChatPanel.jsx";
+import { alpha } from "../utils/color.js";
 
 // The backend embeds {intent:xxx} at the start of every streamed reply
 // so we can dispatch the right rich component without any extra state wiring.
@@ -50,7 +51,7 @@ function PanelMessages({ messages, inProgress, accent }) {
           return (
             <div key={key} className="msg-row assistant">
               <div className="assistant-bubble">
-                <div className="agent-avatar" style={{ background: accent + "22", color: accent }}>
+                <div className="agent-avatar" style={{ background: alpha(accent, 13), color: accent }}>
                   AI
                 </div>
                 <div className="agent-content">
@@ -67,7 +68,7 @@ function PanelMessages({ messages, inProgress, accent }) {
       {inProgress && (
         <div className="msg-row assistant">
           <div className="assistant-bubble">
-            <div className="agent-avatar" style={{ background: accent + "22", color: accent }}>
+            <div className="agent-avatar" style={{ background: alpha(accent, 13), color: accent }}>
               AI
             </div>
             <div className="agent-content">
@@ -126,7 +127,7 @@ function CopilotPanelInner({ accent, greeting }) {
   );
 }
 
-export default function CopilotPanel({ accent = "#22d3ee", greeting }) {
+export default function CopilotPanel({ accent = "var(--signal)", greeting }) {
   const token =
     typeof localStorage !== "undefined" ? localStorage.getItem("token") || "" : "";
 

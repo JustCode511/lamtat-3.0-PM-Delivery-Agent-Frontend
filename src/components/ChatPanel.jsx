@@ -3,6 +3,8 @@ import { streamChat, sendToLeadership, getConversations, getConversation } from 
 import "./ChatPanel.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { alpha } from "../utils/color.js";
+import { useTheme } from "../context/ThemeContext.jsx";
 // Mermaid is lazy-loaded on first chart render to keep the initial bundle small
 let _mermaidModule = null;
 async function getMermaid() {
@@ -14,21 +16,21 @@ async function getMermaid() {
 
 // Base config applied on every render (pie colours, theme, etc.)
 const _BASE_THEME_VARS = {
-  background: "#0d1117",
-  primaryColor: "#22d3ee",
-  primaryTextColor: "#e6edf3",
-  primaryBorderColor: "rgba(255,255,255,0.12)",
-  lineColor: "#9aa5b4",
-  secondaryColor: "#1e2a3a",
-  tertiaryColor: "#1a2030",
+  background: "var(--bg)",
+  primaryColor: "var(--signal)",
+  primaryTextColor: "var(--text)",
+  primaryBorderColor: "rgba(var(--overlay-rgb), 0.12)",
+  lineColor: "var(--text-dim)",
+  secondaryColor: "var(--surface-2)",
+  tertiaryColor: "var(--surface)",
   fontSize: "13px",
-  pie1: "#22d3ee", pie2: "#a78bfa", pie3: "#34d399",
-  pie4: "#fbbf24", pie5: "#f87171", pie6: "#fb923c",
-  pie7: "#60a5fa", pie8: "#e879f9",
+  pie1: "var(--signal)", pie2: "var(--talent)", pie3: "var(--ok)",
+  pie4: "var(--warn)", pie5: "var(--risk)", pie6: "var(--orange)",
+  pie7: "var(--blue)", pie8: "#e879f9",
 };
 
 // Colors cycled through for each xychart rendered in this session
-const _XY_COLORS = ["#22d3ee", "#a78bfa", "#34d399", "#fbbf24", "#f87171", "#fb923c", "#60a5fa"];
+const _XY_COLORS = ["var(--signal)", "var(--talent)", "var(--ok)", "var(--warn)", "var(--risk)", "var(--orange)", "var(--blue)"];
 let _xyColorIdx = 0;
 
 // Serialise all mermaid renders so m.initialize() + m.render() pairs never interleave
@@ -61,15 +63,15 @@ function relTime(iso) {
 function parseHealthColor(health) {
   const h = (health || "").toLowerCase();
   if (h.startsWith("red") || h.includes("high") || h.includes("critical") || h.includes("at risk") || h.includes("significant"))
-    return { color: "#ef4444", bg: "rgba(239,68,68,0.10)", border: "rgba(239,68,68,0.3)", label: "AT RISK",
+    return { color: "var(--risk)", bg: "color-mix(in srgb, var(--risk) 10%, transparent)", border: "color-mix(in srgb, var(--risk) 30%, transparent)", label: "AT RISK",
              badgeBg: "#dc2626", badgeColor: "#fff" };
   if (h.startsWith("yellow") || h.includes("medium") || h.includes("attention") || h.includes("watch") || h.includes("moderate") || h.includes("stable"))
-    return { color: "#eab308", bg: "rgba(234,179,8,0.10)", border: "rgba(234,179,8,0.3)", label: "WATCH",
+    return { color: "var(--warn)", bg: "color-mix(in srgb, var(--warn) 10%, transparent)", border: "color-mix(in srgb, var(--warn) 30%, transparent)", label: "WATCH",
              badgeBg: "#ca8a04", badgeColor: "#fff" };
   if (h.startsWith("green") || h.includes("on track") || h.includes("healthy"))
-    return { color: "#34d399", bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.3)", label: "ON TRACK",
+    return { color: "var(--ok)", bg: "color-mix(in srgb, var(--ok) 10%, transparent)", border: "color-mix(in srgb, var(--ok) 30%, transparent)", label: "ON TRACK",
              badgeBg: "#059669", badgeColor: "#fff" };
-  return { color: "#34d399", bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.3)", label: "ON TRACK",
+  return { color: "var(--ok)", bg: "color-mix(in srgb, var(--ok) 10%, transparent)", border: "color-mix(in srgb, var(--ok) 30%, transparent)", label: "ON TRACK",
            badgeBg: "#059669", badgeColor: "#fff" };
 }
 
@@ -78,18 +80,18 @@ function extractJiraUrl(text)   { const m = text.match(/https?:\/\/[^\s)<>]+atla
 
 function getPriorityColor(p) {
   const s = (p || "").toLowerCase();
-  if (s === "highest") return "#ef4444";
-  if (s === "high")    return "#f97316";
-  if (s === "medium")  return "#eab308";
-  if (s === "low")     return "#22d3ee";
-  return "#9aa5b4";
+  if (s === "highest") return "var(--risk)";
+  if (s === "high")    return "var(--orange)";
+  if (s === "medium")  return "var(--warn)";
+  if (s === "low")     return "var(--signal)";
+  return "var(--text-dim)";
 }
 
 // ═══════════════════════════════════════════════════════════════════════
 // CONSTANTS
 // ═══════════════════════════════════════════════════════════════════════
 
-const PROJECT_ACCENTS = ["#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#fb923c","#60a5fa"];
+const PROJECT_ACCENTS = ["var(--signal)","var(--talent)","var(--ok)","var(--warn)","var(--risk)","var(--orange)","var(--blue)"];
 
 const AGENT_TIPS = [
   { icon: "📊", prompt: "Generate a status report for AABG", hint: "Full breakdown — progress, risks, next steps, all in one card" },
@@ -127,7 +129,7 @@ function ThinkingPanel({ accent }) {
         <span className="tip-icon">{tip.icon}</span>
         <div className="tip-body">
           <div className="tip-eyebrow">While you wait — try this next</div>
-          <div className="tip-prompt" style={{ color: accent ?? "#22d3ee" }}>
+          <div className="tip-prompt" style={{ color: accent ?? "var(--signal)" }}>
             &ldquo;{tip.prompt}&rdquo;
           </div>
           <div className="tip-hint">{tip.hint}</div>
@@ -153,18 +155,18 @@ const INTENT_LABELS = {
 };
 
 const STATUS_CFG = {
-  "at risk":         { color: "#ef4444", bg: "rgba(239,68,68,0.10)",  border: "rgba(239,68,68,0.3)",  label: "AT RISK",     badgeBg: "#dc2626", badgeColor: "#fff" },
-  "at_risk":         { color: "#ef4444", bg: "rgba(239,68,68,0.10)",  border: "rgba(239,68,68,0.3)",  label: "AT RISK",     badgeBg: "#dc2626", badgeColor: "#fff" },
-  "needs attention": { color: "#eab308", bg: "rgba(234,179,8,0.10)",  border: "rgba(234,179,8,0.3)",  label: "WATCH",       badgeBg: "#ca8a04", badgeColor: "#fff" },
-  "on track":        { color: "#34d399", bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.3)", label: "ON TRACK",    badgeBg: "#059669", badgeColor: "#fff" },
-  "healthy":         { color: "#34d399", bg: "rgba(52,211,153,0.10)", border: "rgba(52,211,153,0.3)", label: "HEALTHY",     badgeBg: "#059669", badgeColor: "#fff" },
-  "watch":           { color: "#eab308", bg: "rgba(234,179,8,0.10)",  border: "rgba(234,179,8,0.3)",  label: "WATCH",       badgeBg: "#ca8a04", badgeColor: "#fff" },
+  "at risk":         { color: "var(--risk)", bg: "color-mix(in srgb, var(--risk) 10%, transparent)",  border: "color-mix(in srgb, var(--risk) 30%, transparent)",  label: "AT RISK",     badgeBg: "#dc2626", badgeColor: "#fff" },
+  "at_risk":         { color: "var(--risk)", bg: "color-mix(in srgb, var(--risk) 10%, transparent)",  border: "color-mix(in srgb, var(--risk) 30%, transparent)",  label: "AT RISK",     badgeBg: "#dc2626", badgeColor: "#fff" },
+  "needs attention": { color: "var(--warn)", bg: "color-mix(in srgb, var(--warn) 10%, transparent)",  border: "color-mix(in srgb, var(--warn) 30%, transparent)",  label: "WATCH",       badgeBg: "#ca8a04", badgeColor: "#fff" },
+  "on track":        { color: "var(--ok)", bg: "color-mix(in srgb, var(--ok) 10%, transparent)", border: "color-mix(in srgb, var(--ok) 30%, transparent)", label: "ON TRACK",    badgeBg: "#059669", badgeColor: "#fff" },
+  "healthy":         { color: "var(--ok)", bg: "color-mix(in srgb, var(--ok) 10%, transparent)", border: "color-mix(in srgb, var(--ok) 30%, transparent)", label: "HEALTHY",     badgeBg: "#059669", badgeColor: "#fff" },
+  "watch":           { color: "var(--warn)", bg: "color-mix(in srgb, var(--warn) 10%, transparent)",  border: "color-mix(in srgb, var(--warn) 30%, transparent)",  label: "WATCH",       badgeBg: "#ca8a04", badgeColor: "#fff" },
 };
 
 function getStatusCfg(status) {
   const key = (status || "").toLowerCase();
   for (const [k, v] of Object.entries(STATUS_CFG)) { if (key.includes(k)) return v; }
-  return { color: "#9aa5b4", bg: "rgba(154,165,180,0.10)", border: "rgba(154,165,180,0.3)", label: (status || "UNKNOWN").toUpperCase(), badgeBg: "#475569", badgeColor: "#fff" };
+  return { color: "var(--text-dim)", bg: "color-mix(in srgb, var(--text-mute) 10%, transparent)", border: "color-mix(in srgb, var(--text-mute) 30%, transparent)", label: (status || "UNKNOWN").toUpperCase(), badgeBg: "#475569", badgeColor: "#fff" };
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -176,6 +178,8 @@ function MermaidChart({ code }) {
   const [svg,     setSvg]  = useState(null);
   const [errored, setErr]  = useState(false);
   const uid = useId().replace(/:/g, "m");
+  const { theme } = useTheme();
+  const isDark = theme !== "light";
 
   // Assign a unique bar color once per component mount (stable ref)
   const colorRef = useRef(null);
@@ -197,8 +201,8 @@ function MermaidChart({ code }) {
         const m = await getMermaid();
         m.initialize({
           startOnLoad: false,
-          theme: "dark",
-          darkMode: true,
+          theme: isDark ? "dark" : "default",
+          darkMode: isDark,
           themeVariables: {
             ..._BASE_THEME_VARS,
             // Each xychart gets its own color; pie charts use pie1-8 from BASE
@@ -213,7 +217,7 @@ function MermaidChart({ code }) {
     });
 
     return () => { cancelled = true; };
-  }, [uid, code, isXy]);
+  }, [uid, code, isXy, isDark]);
 
   if (errored) return <pre className="md-code-block"><code>{code}</code></pre>;
   if (!svg)    return <div className="mermaid-loading">Rendering chart…</div>;
@@ -489,7 +493,7 @@ function PPTMessage({ text }) {
             {dlState === "idle" && <span className="ppt-dl-ext">.pptx</span>}
           </button>
         ) : (
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", margin: 0 }}>
+          <p style={{ fontSize: 13, color: "rgba(var(--overlay-rgb), 0.4)", margin: 0 }}>
             No download link found in agent response.
           </p>
         )}
@@ -529,10 +533,10 @@ function CompareProjectsMessage({ text }) {
   // Detect status for colour coding
   function cellColor(val) {
     const v = val.toLowerCase();
-    if (v.includes("on track") || v.includes("healthy")) return "#34d399";
-    if (v.includes("at risk"))  return "#f87171";
-    if (v.includes("attention") || v.includes("watch")) return "#fbbf24";
-    return "var(--text-secondary, #9aa5b4)";
+    if (v.includes("on track") || v.includes("healthy")) return "var(--ok)";
+    if (v.includes("at risk"))  return "var(--risk)";
+    if (v.includes("attention") || v.includes("watch")) return "var(--warn)";
+    return "var(--text-secondary, var(--text-dim))";
   }
 
   // Parse ### sections
@@ -553,9 +557,9 @@ function CompareProjectsMessage({ text }) {
       const bm = t.match(/^\*\*([^:*]+):\*\*\s*(.*)/);
       return (
         <div key={i} style={{ display:"flex", gap:8, marginBottom:5 }}>
-          <span style={{ color:"#22d3ee", flexShrink:0, marginTop:2 }}>›</span>
-          <span style={{ fontSize:12, color:"#9aa5b4", lineHeight:1.55 }}>
-            {bm ? <><strong style={{ color:"#e6edf3" }}>{bm[1]}:</strong> {bm[2]}</> : t}
+          <span style={{ color:"var(--signal)", flexShrink:0, marginTop:2 }}>›</span>
+          <span style={{ fontSize:12, color:"var(--text-dim)", lineHeight:1.55 }}>
+            {bm ? <><strong style={{ color:"var(--text)" }}>{bm[1]}:</strong> {bm[2]}</> : t}
           </span>
         </div>
       );
@@ -569,10 +573,10 @@ function CompareProjectsMessage({ text }) {
       const bm   = rest.match(/^\*\*([^:*]+):\*\*\s*(.*)/);
       return (
         <div key={i} style={{ display:"flex", gap:10, marginBottom:7, alignItems:"flex-start" }}>
-          <span style={{ fontSize:10, fontWeight:800, background:"rgba(34,211,238,0.12)",
-            color:"#22d3ee", borderRadius:4, padding:"2px 6px", flexShrink:0 }}>{i+1}</span>
-          <span style={{ fontSize:12, color:"#9aa5b4", lineHeight:1.55 }}>
-            {bm ? <><strong style={{ color:"#e6edf3" }}>{bm[1]}:</strong> {bm[2]}</> : rest}
+          <span style={{ fontSize:10, fontWeight:800, background:"color-mix(in srgb, var(--signal) 12%, transparent)",
+            color:"var(--signal)", borderRadius:4, padding:"2px 6px", flexShrink:0 }}>{i+1}</span>
+          <span style={{ fontSize:12, color:"var(--text-dim)", lineHeight:1.55 }}>
+            {bm ? <><strong style={{ color:"var(--text)" }}>{bm[1]}:</strong> {bm[2]}</> : rest}
           </span>
         </div>
       );
@@ -585,9 +589,9 @@ function CompareProjectsMessage({ text }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", gap:12, animation:"slideUp 0.3s ease" }}>
       {/* Header */}
-      <div style={{ paddingBottom:10, borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
-        <div style={{ fontSize:14, fontWeight:700, color:"#e6edf3" }}>Project Comparison</div>
-        <div style={{ fontSize:11, color:"#6b7688", marginTop:2 }}>{title}</div>
+      <div style={{ paddingBottom:10, borderBottom:"1px solid rgba(var(--overlay-rgb), 0.07)" }}>
+        <div style={{ fontSize:14, fontWeight:700, color:"var(--text)" }}>Project Comparison</div>
+        <div style={{ fontSize:11, color:"var(--text-mute)", marginTop:2 }}>{title}</div>
       </div>
 
       {/* Status badges */}
@@ -595,13 +599,13 @@ function CompareProjectsMessage({ text }) {
         {[{ key: colA, status: statusA }, { key: colB, status: statusB }].map(({ key, status }) => {
           const c = cellColor(status);
           return (
-            <div key={key} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid rgba(255,255,255,0.08)`,
+            <div key={key} style={{ background:"rgba(var(--overlay-rgb), 0.03)", border:`1px solid rgba(var(--overlay-rgb), 0.08)`,
               borderTop:`2px solid ${c}`, borderRadius:10, padding:"12px 14px" }}>
-              <div style={{ fontSize:11, fontWeight:800, color:"#6b7688", letterSpacing:"0.07em",
+              <div style={{ fontSize:11, fontWeight:800, color:"var(--text-mute)", letterSpacing:"0.07em",
                 textTransform:"uppercase", marginBottom:6 }}>{key}</div>
               {status && (
                 <span style={{ fontSize:11, fontWeight:700, color:c,
-                  background:c+"18", borderRadius:20, padding:"3px 10px" }}>{clean(status)}</span>
+                  background:alpha(c, 9), borderRadius:20, padding:"3px 10px" }}>{clean(status)}</span>
               )}
             </div>
           );
@@ -610,21 +614,21 @@ function CompareProjectsMessage({ text }) {
 
       {/* Comparison table */}
       {tableRows.length > 0 && (
-        <div style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.07)",
+        <div style={{ background:"rgba(var(--overlay-rgb), 0.03)", border:"1px solid rgba(var(--overlay-rgb), 0.07)",
           borderRadius:10, overflow:"hidden" }}>
           <div style={{ display:"grid", gridTemplateColumns:"1.2fr 1fr 1fr",
-            background:"rgba(255,255,255,0.04)", padding:"7px 14px",
-            borderBottom:"1px solid rgba(255,255,255,0.07)" }}>
+            background:"rgba(var(--overlay-rgb), 0.04)", padding:"7px 14px",
+            borderBottom:"1px solid rgba(var(--overlay-rgb), 0.07)" }}>
             {["Metric", colA, colB].map(h => (
-              <span key={h} style={{ fontSize:10, fontWeight:700, color:"#6b7688",
+              <span key={h} style={{ fontSize:10, fontWeight:700, color:"var(--text-mute)",
                 textTransform:"uppercase", letterSpacing:"0.07em" }}>{h}</span>
             ))}
           </div>
           {tableRows.map((row, i) => (
             <div key={i} style={{ display:"grid", gridTemplateColumns:"1.2fr 1fr 1fr",
-              padding:"8px 14px", borderBottom: i < tableRows.length-1 ? "1px solid rgba(255,255,255,0.05)" : "none",
-              background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent" }}>
-              <span style={{ fontSize:11, color:"#9aa5b4" }}>{row.metric}</span>
+              padding:"8px 14px", borderBottom: i < tableRows.length-1 ? "1px solid rgba(var(--overlay-rgb), 0.05)" : "none",
+              background: i % 2 ? "rgba(var(--overlay-rgb), 0.01)" : "transparent" }}>
+              <span style={{ fontSize:11, color:"var(--text-dim)" }}>{row.metric}</span>
               <span style={{ fontSize:11, fontWeight:600, color: cellColor(row.a) }}>{clean(row.a)}</span>
               <span style={{ fontSize:11, fontWeight:600, color: cellColor(row.b) }}>{clean(row.b)}</span>
             </div>
@@ -635,9 +639,9 @@ function CompareProjectsMessage({ text }) {
       {/* Why sections — two columns */}
       {(whyA || whyB) && (
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-          {[{ key: colA, text: whyA, color:"#34d399" }, { key: colB, text: whyB, color:"#f87171" }].map(({ key, text: t, color }) => (
-            <div key={key} style={{ background:"rgba(255,255,255,0.03)",
-              border:`1px solid rgba(255,255,255,0.07)`, borderRadius:10, padding:"12px 14px" }}>
+          {[{ key: colA, text: whyA, color:"var(--ok)" }, { key: colB, text: whyB, color:"var(--risk)" }].map(({ key, text: t, color }) => (
+            <div key={key} style={{ background:"rgba(var(--overlay-rgb), 0.03)",
+              border:`1px solid rgba(var(--overlay-rgb), 0.07)`, borderRadius:10, padding:"12px 14px" }}>
               <div style={{ fontSize:10, fontWeight:800, color, textTransform:"uppercase",
                 letterSpacing:"0.07em", marginBottom:9 }}>Why {key}</div>
               {renderBullets(t)}
@@ -648,19 +652,19 @@ function CompareProjectsMessage({ text }) {
 
       {/* Key Differences */}
       {diff && (
-        <div style={{ background:"rgba(167,139,250,0.06)", border:"1px solid rgba(167,139,250,0.18)",
+        <div style={{ background:"color-mix(in srgb, var(--talent) 6%, transparent)", border:"1px solid color-mix(in srgb, var(--talent) 18%, transparent)",
           borderRadius:10, padding:"12px 14px" }}>
-          <div style={{ fontSize:10, fontWeight:800, color:"#a78bfa", textTransform:"uppercase",
+          <div style={{ fontSize:10, fontWeight:800, color:"var(--talent)", textTransform:"uppercase",
             letterSpacing:"0.07em", marginBottom:8 }}>Key Differences</div>
-          <p style={{ fontSize:12, color:"#9aa5b4", lineHeight:1.65, margin:0 }}>{clean(diff)}</p>
+          <p style={{ fontSize:12, color:"var(--text-dim)", lineHeight:1.65, margin:0 }}>{clean(diff)}</p>
         </div>
       )}
 
       {/* Recommended Actions */}
       {actions && (
-        <div style={{ background:"rgba(34,211,238,0.05)", border:"1px solid rgba(34,211,238,0.15)",
+        <div style={{ background:"color-mix(in srgb, var(--signal) 5%, transparent)", border:"1px solid color-mix(in srgb, var(--signal) 15%, transparent)",
           borderRadius:10, padding:"12px 14px" }}>
-          <div style={{ fontSize:10, fontWeight:800, color:"#22d3ee", textTransform:"uppercase",
+          <div style={{ fontSize:10, fontWeight:800, color:"var(--signal)", textTransform:"uppercase",
             letterSpacing:"0.07em", marginBottom:10 }}>Recommended Actions</div>
           {renderNumbered(actions)}
         </div>
@@ -674,13 +678,13 @@ function CompareProjectsMessage({ text }) {
 // ═══════════════════════════════════════════════════════════════════════
 
 const TW_STATUS = {
-  "✅": { label: "Done",        color: "#34d399", bg: "rgba(52,211,153,0.12)"  },
-  "🔄": { label: "In Progress", color: "#22d3ee", bg: "rgba(34,211,238,0.12)"  },
-  "🔍": { label: "In Review",   color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-  "📋": { label: "To Do",       color: "#9aa5b4", bg: "rgba(154,165,180,0.10)" },
-  "•":  { label: "",            color: "#9aa5b4", bg: "rgba(154,165,180,0.10)" },
+  "✅": { label: "Done",        color: "var(--ok)", bg: "color-mix(in srgb, var(--ok) 12%, transparent)"  },
+  "🔄": { label: "In Progress", color: "var(--signal)", bg: "color-mix(in srgb, var(--signal) 12%, transparent)"  },
+  "🔍": { label: "In Review",   color: "var(--talent)", bg: "color-mix(in srgb, var(--talent) 12%, transparent)" },
+  "📋": { label: "To Do",       color: "var(--text-dim)", bg: "color-mix(in srgb, var(--text-mute) 10%, transparent)" },
+  "•":  { label: "",            color: "var(--text-dim)", bg: "color-mix(in srgb, var(--text-mute) 10%, transparent)" },
 };
-const PRIO_COLOR = { Highest:"#f87171", High:"#fb923c", Medium:"#fbbf24", Low:"#22d3ee", Lowest:"#6b7688" };
+const PRIO_COLOR = { Highest:"var(--risk)", High:"var(--orange)", Medium:"var(--warn)", Low:"var(--signal)", Lowest:"var(--text-mute)" };
 
 function initials(name) {
   return name.split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() || "").join("");
@@ -736,7 +740,7 @@ function TeamWorkloadMessage({ text }) {
 
   if (!memberBlocks.length) return <DefaultMessage text={text} />;
 
-  const AVATAR_COLORS = ["#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#60a5fa"];
+  const AVATAR_COLORS = ["var(--signal)","var(--talent)","var(--ok)","var(--warn)","var(--risk)","var(--blue)"];
 
   return (
     <div className="tw-wrap">
@@ -760,14 +764,14 @@ function TeamWorkloadMessage({ text }) {
             <div key={mi} className="tw-card">
               {/* Card header */}
               <div className="tw-card-head">
-                <div className="tw-avatar" style={{ background: avatarColor + "22", color: avatarColor, border: `1px solid ${avatarColor}40` }}>
+                <div className="tw-avatar" style={{ background: alpha(avatarColor, 13), color: avatarColor, border: `1px solid ${alpha(avatarColor, 25)}` }}>
                   {initials(member.name)}
                 </div>
                 <div className="tw-card-info">
                   <div className="tw-name">{member.name}</div>
                   <div className="tw-count">{member.taskCount} task{member.taskCount !== 1 ? "s" : ""}{member.doneCount > 0 ? ` · ${member.doneCount} done` : ""}</div>
                 </div>
-                <div className="tw-pct" style={{ color: pct >= 75 ? "#34d399" : pct >= 40 ? "#fbbf24" : "#f87171" }}>{pct}%</div>
+                <div className="tw-pct" style={{ color: pct >= 75 ? "var(--ok)" : pct >= 40 ? "var(--warn)" : "var(--risk)" }}>{pct}%</div>
               </div>
 
               {/* Progress bar */}
@@ -789,7 +793,7 @@ function TeamWorkloadMessage({ text }) {
                           <span className="tw-tag" style={{ color: sc.color, background: sc.bg }}>{task.status}</span>
                         )}
                         {task.priority && task.priority !== "Medium" && (
-                          <span className="tw-tag" style={{ color: pc || "#9aa5b4", background: (pc || "#9aa5b4") + "18" }}>{task.priority}</span>
+                          <span className="tw-tag" style={{ color: pc || "var(--text-dim)", background: alpha(pc || "var(--text-dim)", 9) }}>{task.priority}</span>
                         )}
                       </div>
                     </div>
@@ -830,7 +834,7 @@ function LeadershipPrompt({ text, accent, onAction }) {
   if (state === "done") return null;
 
   return (
-    <div className="leadership-prompt" style={{ borderColor: accent + "40" }}>
+    <div className="leadership-prompt" style={{ borderColor: alpha(accent, 25) }}>
       <span className="lp-label">Would you like to send this report to Leadership?</span>
       <div className="lp-actions">
         <button
@@ -1007,7 +1011,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
                   key={cv.session_id}
                   className={`ch-item${cv.session_id === sessionId ? " active" : ""}`}
                   onClick={() => loadConversation(cv.session_id)}
-                  style={cv.session_id === sessionId ? { borderColor: accent + "66" } : undefined}
+                  style={cv.session_id === sessionId ? { borderColor: alpha(accent, 40) } : undefined}
                 >
                   <span className="ch-item-title">{cv.title}</span>
                   <span className="ch-item-time">{relTime(cv.updated_at)}</span>
@@ -1052,7 +1056,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
               <div className="user-bubble" style={{ background: accent, color: "#06222b" }}>{msg.text}</div>
             ) : (
               <div className="assistant-bubble">
-                <div className="agent-avatar" style={{ background: accent + "22", color: accent }}>AI</div>
+                <div className="agent-avatar" style={{ background: alpha(accent, 13), color: accent }}>AI</div>
                 <div className="agent-content">
                   <MessageRenderer msg={msg} accent={accent} />
                   {msg.reportable && (
@@ -1078,7 +1082,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
         {busy && !messages.some(m => m.ui_hint === "streaming") && (
           <div className="msg-row assistant">
             <div className="assistant-bubble">
-              <div className="agent-avatar" style={{ background: accent+"22", color: accent }}>AI</div>
+              <div className="agent-avatar" style={{ background: alpha(accent, 13), color: accent }}>AI</div>
               <div className="agent-content">
                 <ThinkingPanel accent={accent} />
               </div>

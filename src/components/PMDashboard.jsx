@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { getProjects, getDashboard, getActivity } from "../api/client.js";
+import { alpha } from "../utils/color.js";
 
 /* ─── helpers ────────────────────────────────────────────────── */
 
@@ -34,10 +35,10 @@ const STATUS = {
 };
 
 function progressColor(pct) {
-  if (pct === 0)  return "#f87171";
-  if (pct <= 25)  return "#fbbf24";
-  if (pct < 76)   return "#22d3ee";
-  return "#34d399";
+  if (pct === 0)  return "var(--risk)";
+  if (pct <= 25)  return "var(--warn)";
+  if (pct < 76)   return "var(--signal)";
+  return "var(--ok)";
 }
 
 function getInsight(p) {
@@ -65,7 +66,7 @@ function elapsed(ms) {
 
 /* ─── main component ─────────────────────────────────────────── */
 
-export default function PMDashboard({ accentHex = "#22d3ee" }) {
+export default function PMDashboard({ accentHex = "var(--signal)" }) {
   const [projects,   setProjects]   = useState([]);
   const [selected,   setSelected]   = useState(null);
   const [detail,     setDetail]     = useState(null);
@@ -243,7 +244,7 @@ function ProjectCard({ project: p, accentHex, onOpen }) {
         ...s.card,
         borderLeftColor: st.cardBorder,
         boxShadow: hovered
-          ? `0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px ${st.cardBorder}30`
+          ? `0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px ${alpha(st.cardBorder, 19)}`
           : s.card.boxShadow,
         transform: hovered ? "translateY(-3px)" : "none",
       }}
@@ -278,8 +279,8 @@ function ProjectCard({ project: p, accentHex, onOpen }) {
           <div style={{
             ...s.trackFill,
             width: `${pct}%`,
-            background: `linear-gradient(90deg, ${pc}, ${pc}90)`,
-            boxShadow: pct > 0 ? `0 0 6px ${pc}60` : "none",
+            background: `linear-gradient(90deg, ${pc}, ${alpha(pc, 56)})`,
+            boxShadow: pct > 0 ? `0 0 6px ${alpha(pc, 38)}` : "none",
           }} />
         </div>
       </div>
@@ -328,15 +329,15 @@ function MiniBox({ label, value, color }) {
 /* ─── ActivityFeed helpers ───────────────────────────────────────── */
 
 const _EV = {
-  created:          { color: "#34d399", label: "created"         },
-  status_changed:   { color: "#22d3ee", label: "status changed"  },
-  assignee_changed: { color: "#a78bfa", label: "assigned"        },
-  priority_changed: { color: "#fbbf24", label: "priority"        },
-  renamed:          { color: "#6b7688", label: "renamed"         },
-  comment_risk:     { color: "#f87171", label: "⚠ risk comment"  },
+  created:          { color: "var(--ok)", label: "created"         },
+  status_changed:   { color: "var(--signal)", label: "status changed"  },
+  assignee_changed: { color: "var(--talent)", label: "assigned"        },
+  priority_changed: { color: "var(--warn)", label: "priority"        },
+  renamed:          { color: "var(--text-mute)", label: "renamed"         },
+  comment_risk:     { color: "var(--risk)", label: "⚠ risk comment"  },
 };
 
-const _AV_COLORS = ["#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#fb923c","#60a5fa"];
+const _AV_COLORS = ["var(--signal)","var(--talent)","var(--ok)","var(--warn)","var(--risk)","var(--orange)","var(--blue)"];
 function _avatarColor(name) {
   let h = 0;
   for (const c of (name || "")) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
@@ -395,7 +396,7 @@ function ActivityFeed() {
       <div style={s.sectionHead}>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={s.sectionLabel}>Recent Activity</span>
-          <span className="live-dot" style={{ background: "#34d399" }} />
+          <span className="live-dot" style={{ background: "var(--ok)" }} />
         </div>
         <span style={{ fontSize: 10, color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
           {refreshLabel}
@@ -414,25 +415,25 @@ function ActivityFeed() {
         ) : (
           <div style={s.activityTimeline}>
             {events.map((ev, i) => {
-              const cfg = _EV[ev.type] || { color: "#6b7688", label: ev.type };
+              const cfg = _EV[ev.type] || { color: "var(--text-mute)", label: ev.type };
               const avc = _avatarColor(ev.author);
               return (
                 <div key={i} style={s.activityItem}>
                   <div style={{ ...s.activityDot, background: cfg.color }} />
-                  <div style={{ ...s.activityAvatar, background: avc + "20", color: avc, border: `1px solid ${avc}40` }}>
+                  <div style={{ ...s.activityAvatar, background: alpha(avc, 13), color: avc, border: `1px solid ${alpha(avc, 25)}` }}>
                     {_initials(ev.author)}
                   </div>
                   <div style={s.activityContent}>
                     <div style={s.activityTopRow}>
                       <span style={s.activityAuthor}>{ev.author}</span>
-                      <span style={{ ...s.activityChip, color: cfg.color, background: cfg.color + "15", border: `1px solid ${cfg.color}28` }}>
+                      <span style={{ ...s.activityChip, color: cfg.color, background: alpha(cfg.color, 8), border: `1px solid ${alpha(cfg.color, 16)}` }}>
                         {cfg.label}
                       </span>
                       <span style={s.activityDesc}>{_actionText(ev)}</span>
                       <span style={s.activityTime}>{_relTime(ev.timestamp)}</span>
                     </div>
                     <div style={s.activityBotRow}>
-                      <span style={{ ...s.activityKey, color: cfg.color, background: cfg.color + "10", border: `1px solid ${cfg.color}28` }}>
+                      <span style={{ ...s.activityKey, color: cfg.color, background: alpha(cfg.color, 6), border: `1px solid ${alpha(cfg.color, 16)}` }}>
                         {ev.issue_key}
                       </span>
                       <span style={s.activitySummary}>{ev.issue_summary}</span>
@@ -459,11 +460,11 @@ function ActivityFeed() {
 /* ─── DetailView helpers ──────────────────────────────────────── */
 
 const PRIORITY_COLORS = {
-  Highest: "#f87171",
-  High:    "#fb923c",
-  Medium:  "#fbbf24",
-  Low:     "#22d3ee",
-  Lowest:  "#6b7688",
+  Highest: "var(--risk)",
+  High:    "var(--orange)",
+  Medium:  "var(--warn)",
+  Low:     "var(--signal)",
+  Lowest:  "var(--text-mute)",
 };
 
 function getPriorityColor(p) {
@@ -504,7 +505,7 @@ function DonutChart({ data, total }) {
     <div style={{ position:"relative", width:size, height:size, flexShrink:0 }}>
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}
         style={{ transform:"rotate(-90deg)" }}>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="#1d2330" strokeWidth={22}/>
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={22}/>
         {segs.map((seg, i) => seg.segLen > 0 && (
           <circle key={i} cx={cx} cy={cy} r={r} fill="none"
             stroke={seg.clr} strokeWidth={22}
@@ -603,8 +604,8 @@ function DetailView({ detail, accentHex, onBack }) {
         </div>
         <div style={{ ...s.trackWrap, height:8, marginTop:8 }}>
           <div style={{ ...s.trackFill, width:`${pct}%`,
-            background:`linear-gradient(90deg, ${accentHex}, #a78bfa)`,
-            boxShadow:`0 0 10px ${accentHex}45` }} />
+            background:`linear-gradient(90deg, ${accentHex}, var(--talent))`,
+            boxShadow:`0 0 10px ${alpha(accentHex, 27)}` }} />
         </div>
         <div style={{ display:"flex", justifyContent:"space-between", marginTop:6 }}>
           <span style={{ fontSize:11, color:"var(--text-muted)" }} className="mono">{detail.done || 0} resolved</span>
@@ -720,7 +721,7 @@ function DetailView({ detail, accentHex, onBack }) {
 
       {/* ── AI INSIGHTS */}
       {insights.length > 0 && (
-        <div style={{ background:`${accentHex}08`, border:`1px solid ${accentHex}22`,
+        <div style={{ background:alpha(accentHex, 5), border:`1px solid ${alpha(accentHex, 13)}`,
           borderRadius:12, padding:"14px 16px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
             <span style={{ color:accentHex }}>◆</span>
@@ -742,7 +743,7 @@ function DetailView({ detail, accentHex, onBack }) {
       <div style={s.sectionHead}>
         <span style={s.sectionLabel}>Critical Risks</span>
         <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em",
-          color:accentHex, background:accentHex+"10", border:`1px solid ${accentHex}30`,
+          color:accentHex, background:alpha(accentHex, 6), border:`1px solid ${alpha(accentHex, 19)}`,
           borderRadius:20, padding:"3px 9px" }}>◆ AI resolution</span>
       </div>
 
@@ -767,7 +768,7 @@ function RiskCard({ risk, accentHex }) {
       <div style={{ padding:"14px 14px 10px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:6, flexWrap:"wrap" }}>
           <span style={{ fontFamily:"var(--font-mono)", fontSize:11, fontWeight:700,
-            color:pc, background:pc+"18", border:`1px solid ${pc}40`,
+            color:pc, background:alpha(pc, 9), border:`1px solid ${alpha(pc, 25)}`,
             borderRadius:4, padding:"2px 7px" }}>{risk.key}</span>
           <span style={{ fontSize:11, color:pc, fontWeight:700 }}>{risk.priority}</span>
           {risk.days_overdue > 0 && (
@@ -777,7 +778,7 @@ function RiskCard({ risk, accentHex }) {
         </div>
         <p style={{ fontSize:14, fontWeight:600, color:"var(--text)", lineHeight:1.45 }}>{risk.summary}</p>
       </div>
-      <div style={{ borderTop:`1px solid ${accentHex}18`, background:`${accentHex}06`, padding:"11px 14px" }}>
+      <div style={{ borderTop:`1px solid ${alpha(accentHex, 9)}`, background:alpha(accentHex, 4), padding:"11px 14px" }}>
         <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8 }}>
           <span style={{ color:accentHex }}>◆</span>
           <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.1em",
@@ -1023,9 +1024,9 @@ const s = {
     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1,
   },
   activityCommentSnippet: {
-    fontSize: 11, color: "#f87171", fontStyle: "italic",
+    fontSize: 11, color: "var(--risk)", fontStyle: "italic",
     marginTop: 5, paddingLeft: 8,
-    borderLeft: "2px solid rgba(248,113,113,0.25)",
+    borderLeft: "2px solid color-mix(in srgb, var(--risk) 25%, transparent)",
     lineHeight: 1.45,
   },
   activityProjectTag: {

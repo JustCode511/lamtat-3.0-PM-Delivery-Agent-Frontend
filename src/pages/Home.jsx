@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { MODULE_LIST } from "../modules.js";
+import { alpha } from "../utils/color.js";
+import ThemeToggle from "../components/ThemeToggle.jsx";
 
-const ACCENT_HEX = { pm: "#22d3ee", talent: "#a78bfa", code: "#34d399", finops: "#fbbf24" };
 const MODULE_NUM  = ["01", "02", "03", "04"];
 
 export default function Home() {
@@ -25,6 +26,7 @@ export default function Home() {
         </div>
         <div style={s.headerRight}>
           <span style={s.userLabel} className="mono">{user}</span>
+          <ThemeToggle />
           <button className="btn-ghost" onClick={() => { signOut(); navigate("/login"); }}>
             Sign out
           </button>
@@ -45,15 +47,15 @@ export default function Home() {
           <div style={s.lede}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
               {[
-                { label: "PM",      color: "#22d3ee" },
-                { label: "Talent",  color: "#a78bfa" },
-                { label: "Code",    color: "#34d399" },
-                { label: "FinOps",  color: "#fbbf24" },
+                { label: "PM",      color: "var(--signal)" },
+                { label: "Talent",  color: "var(--talent)" },
+                { label: "Code",    color: "var(--ok)" },
+                { label: "FinOps",  color: "var(--warn)" },
               ].map(a => (
                 <span key={a.label} style={{
                   fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
-                  color: a.color, background: a.color + "18",
-                  border: `1px solid ${a.color}40`,
+                  color: a.color, background: alpha(a.color, 9),
+                  border: `1px solid ${alpha(a.color, 25)}`,
                   borderRadius: 6, padding: "3px 9px",
                   fontFamily: "var(--font-display)",
                 }}>{a.label}</span>
@@ -83,16 +85,16 @@ export default function Home() {
         {/* Module cards */}
         <div style={s.grid}>
           {MODULE_LIST.map((m, i) => {
-            const accent  = ACCENT_HEX[m.id] || "#22d3ee";
+            const accent  = m.accent || "var(--signal)";
             const isHover = hovered === m.id;
             return (
               <button
                 key={m.id}
                 style={{
                   ...s.card,
-                  borderColor: isHover ? accent + "55" : "rgba(42,49,64,0.8)",
+                  borderColor: isHover ? alpha(accent, 33) : "color-mix(in srgb, var(--border) 80%, transparent)",
                   boxShadow: isHover
-                    ? `0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px ${accent}35, 0 0 60px ${accent}10`
+                    ? `0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px ${alpha(accent, 21)}, 0 0 60px ${alpha(accent, 6)}`
                     : s.card.boxShadow,
                   transform: isHover ? "translateY(-5px) scale(1.01)" : "none",
                 }}
@@ -105,8 +107,8 @@ export default function Home() {
                 <div style={{
                   height: "3px",
                   background: isHover
-                    ? `linear-gradient(90deg, ${accent}, ${accent}60, transparent)`
-                    : `linear-gradient(90deg, ${accent}55, transparent)`,
+                    ? `linear-gradient(90deg, ${accent}, ${alpha(accent, 38)}, transparent)`
+                    : `linear-gradient(90deg, ${alpha(accent, 33)}, transparent)`,
                   transition: "background 0.25s ease",
                   borderRadius: "20px 20px 0 0",
                 }} />
@@ -114,7 +116,7 @@ export default function Home() {
                 <div style={s.inner}>
                   {/* Card header row */}
                   <div style={s.cardTop}>
-                    <span style={{ ...s.num, color: accent + "70" }} className="mono">
+                    <span style={{ ...s.num, color: alpha(accent, 44) }} className="mono">
                       {MODULE_NUM[i]}
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
@@ -125,8 +127,8 @@ export default function Home() {
                         style={{
                           ...s.chip,
                           color: accent,
-                          borderColor: accent + "45",
-                          background: accent + "12",
+                          borderColor: alpha(accent, 27),
+                          background: alpha(accent, 7),
                         }}
                         className="mono"
                       >
@@ -172,25 +174,25 @@ const s = {
   glowA: {
     position: "fixed", top: "-30%", left: "-8%",
     width: "60vw", height: "65vh",
-    background: "radial-gradient(ellipse, rgba(34,211,238,0.08) 0%, transparent 70%)",
+    background: "radial-gradient(ellipse, color-mix(in srgb, var(--signal) 8%, transparent) 0%, transparent 70%)",
     pointerEvents: "none", zIndex: 0,
   },
   glowB: {
     position: "fixed", bottom: "-25%", right: "-5%",
     width: "50vw", height: "55vh",
-    background: "radial-gradient(ellipse, rgba(167,139,250,0.08) 0%, transparent 70%)",
+    background: "radial-gradient(ellipse, color-mix(in srgb, var(--talent) 8%, transparent) 0%, transparent 70%)",
     pointerEvents: "none", zIndex: 0,
   },
   header: {
     position: "sticky", top: 0, zIndex: 10,
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: "16px 32px",
-    borderBottom: "1px solid rgba(42,49,64,0.7)",
+    borderBottom: "1px solid color-mix(in srgb, var(--border) 70%, transparent)",
   },
   brand: { display: "flex", alignItems: "center", gap: "10px" },
   mark: {
     fontSize: "18px",
-    background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+    background: "linear-gradient(135deg, var(--signal), var(--talent))",
     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
     backgroundClip: "text",
   },
@@ -233,9 +235,9 @@ const s = {
   chip2: {
     display: "inline-flex", alignItems: "center", gap: "6px",
     fontSize: "12px", fontWeight: 600,
-    color: "rgba(255,255,255,0.55)",
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.09)",
+    color: "rgba(var(--overlay-rgb), 0.55)",
+    background: "rgba(var(--overlay-rgb), 0.04)",
+    border: "1px solid rgba(var(--overlay-rgb), 0.09)",
     borderRadius: "20px",
     padding: "5px 12px",
     letterSpacing: "0.02em",
@@ -248,8 +250,8 @@ const s = {
   },
   card: {
     textAlign: "left",
-    background: "rgba(22,27,38,0.9)",
-    border: "1px solid rgba(42,49,64,0.8)",
+    background: "color-mix(in srgb, var(--surface) 90%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--border) 80%, transparent)",
     borderRadius: "var(--radius-xl)",
     cursor: "pointer",
     display: "flex", flexDirection: "column", overflow: "hidden",
