@@ -897,8 +897,22 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
   const [sessionId,   setSessionId]   = useState(() => `${moduleId}-${Math.random().toString(36).slice(2, 10)}`);
   const [conversations, setConversations] = useState([]);
   const [loadingConvos, setLoadingConvos] = useState(false);
-  const bottomRef   = useRef(null);
-  const textareaRef = useRef(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const bottomRef    = useRef(null);
+  const textareaRef  = useRef(null);
+  const histWrapRef  = useRef(null);
+
+  // Close history dropdown on outside click
+  useEffect(() => {
+    if (!historyOpen) return;
+    function handleClick(e) {
+      if (histWrapRef.current && !histWrapRef.current.contains(e.target)) {
+        setHistoryOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [historyOpen]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy]);
 
@@ -1024,6 +1038,51 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
         <span className="chat-dot" style={{ background: accent }} />
         <span className="chat-title">Agent Console</span>
         <div className="chat-head-right">
+          {/* History button + dropdown */}
+          <div className="chat-hist-wrap" ref={histWrapRef}>
+            <button
+              className={`chat-expand-btn${historyOpen ? " chat-btn-active" : ""}`}
+              onClick={() => {
+                const next = !historyOpen;
+                setHistoryOpen(next);
+                if (next) refreshConversations();
+              }}
+              title="Conversation history"
+              style={historyOpen ? { color: accent, background: accent + "18" } : undefined}
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="8" cy="8" r="6"/>
+                <path d="M8 5v3l2 2"/>
+              </svg>
+            </button>
+            {historyOpen && (
+              <div className="chat-hist-dropdown">
+                <div className="chd-header">
+                  <span className="chd-title">History</span>
+                  <button className="chd-new-btn" onClick={() => { newChat(); setHistoryOpen(false); }}>+ New chat</button>
+                </div>
+                {loadingConvos ? (
+                  <div className="chd-empty">Loading…</div>
+                ) : conversations.length === 0 ? (
+                  <div className="chd-empty">No conversations yet</div>
+                ) : (
+                  <div className="chd-list">
+                    {conversations.map(cv => (
+                      <button
+                        key={cv.session_id}
+                        className={`chd-item${cv.session_id === sessionId ? " active" : ""}`}
+                        onClick={() => { loadConversation(cv.session_id); setHistoryOpen(false); }}
+                        style={cv.session_id === sessionId ? { borderLeftColor: accent } : undefined}
+                      >
+                        <div className="chd-item-title">{cv.title || "New chat"}</div>
+                        <div className="chd-item-time">{relTime(cv.updated_at)}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <button
             className="chat-expand-btn"
             onClick={() => setFullscreen(f => !f)}

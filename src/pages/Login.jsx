@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import { login, register } from "../api/client.js";
 
 export default function Login() {
@@ -10,6 +11,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const { signIn } = useAuth();
+  const { theme } = useTheme();
   const navigate = useNavigate();
 
   async function handleSubmit(e) {
@@ -39,8 +41,9 @@ export default function Login() {
     }
   }
 
+  const _blurColor = theme === "light" ? "rgba(180,180,200,0.7)" : "rgba(58,67,86,0.7)";
   function focusBorder(e)  { e.target.style.borderColor = "rgba(34,211,238,0.55)"; e.target.style.boxShadow = "0 0 0 3px rgba(34,211,238,0.08)"; }
-  function blurBorder(e)   { e.target.style.borderColor = "rgba(58,67,86,0.7)";    e.target.style.boxShadow = "none"; }
+  function blurBorder(e)   { e.target.style.borderColor = _blurColor; e.target.style.boxShadow = "none"; }
 
   return (
     <div style={s.page}>
@@ -163,13 +166,13 @@ const s = {
   card: {
     position: "relative", zIndex: 1,
     width: "100%", maxWidth: "420px",
-    background: "rgba(22,27,38,0.85)",
+    background: "var(--surface)",
     backdropFilter: "blur(24px)",
     WebkitBackdropFilter: "blur(24px)",
-    border: "1px solid rgba(58,67,86,0.7)",
+    border: "1px solid var(--border)",
     borderRadius: "20px",
     padding: "40px 36px",
-    boxShadow: "0 8px 48px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.06)",
+    boxShadow: "0 8px 48px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06)",
   },
   brand: {
     display: "flex", alignItems: "center", gap: "10px",
@@ -190,9 +193,7 @@ const s = {
   title: {
     fontSize: "32px", fontFamily: "var(--font-display)", fontWeight: 700,
     marginBottom: "6px", letterSpacing: "-0.02em",
-    background: "linear-gradient(135deg, #e6edf3 20%, #9aa5b4 100%)",
-    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-    backgroundClip: "text",
+    color: "var(--text)",
   },
   sub: { fontSize: "14px", color: "var(--text-mute)", lineHeight: 1.5 },
   form: { display: "flex", flexDirection: "column", gap: "14px" },
@@ -202,8 +203,8 @@ const s = {
     letterSpacing: "0.06em", textTransform: "uppercase",
   },
   input: {
-    background: "rgba(13,17,23,0.8)",
-    border: "1px solid rgba(58,67,86,0.7)",
+    background: "var(--surface-2)",
+    border: "1px solid var(--border)",
     borderRadius: "8px",
     padding: "12px 14px",
     outline: "none",
