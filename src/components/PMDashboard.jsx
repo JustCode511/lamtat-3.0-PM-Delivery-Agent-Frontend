@@ -35,7 +35,7 @@ const STATUS = {
 
 function progressColor(pct) {
   if (pct === 0)  return "#f87171";
-  if (pct <= 25)  return "#fbbf24";
+  if (pct <= 25)  return "#f97316";
   if (pct < 76)   return "#22d3ee";
   return "#34d399";
 }
@@ -331,12 +331,12 @@ const _EV = {
   created:          { color: "#34d399", label: "created"         },
   status_changed:   { color: "#22d3ee", label: "status changed"  },
   assignee_changed: { color: "#a78bfa", label: "assigned"        },
-  priority_changed: { color: "#fbbf24", label: "priority"        },
+  priority_changed: { color: "#f97316", label: "priority"        },
   renamed:          { color: "#6b7688", label: "renamed"         },
   comment_risk:     { color: "#f87171", label: "⚠ risk comment"  },
 };
 
-const _AV_COLORS = ["#22d3ee","#a78bfa","#34d399","#fbbf24","#f87171","#fb923c","#60a5fa"];
+const _AV_COLORS = ["#22d3ee","#a78bfa","#34d399","#f97316","#f87171","#fb923c","#60a5fa"];
 function _avatarColor(name) {
   let h = 0;
   for (const c of (name || "")) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
@@ -461,7 +461,7 @@ function ActivityFeed() {
 const PRIORITY_COLORS = {
   Highest: "#f87171",
   High:    "#fb923c",
-  Medium:  "#fbbf24",
+  Medium:  "#f97316",
   Low:     "#22d3ee",
   Lowest:  "#6b7688",
 };

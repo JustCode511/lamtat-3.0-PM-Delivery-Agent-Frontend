@@ -1,14 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTheme } from "../context/ThemeContext.jsx";
 import { MODULE_LIST } from "../modules.js";
 
-const ACCENT_HEX = { pm: "#22d3ee", talent: "#a78bfa", code: "#34d399", finops: "#fbbf24" };
+const ACCENT_HEX = { pm: "#A100FF", talent: "#c84bff", code: "#34d399", finops: "#f97316" };
 const MODULE_NUM  = ["01", "02", "03", "04"];
 
 export default function Home() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [hovered, setHovered] = useState(null);
 
   return (
@@ -24,6 +26,9 @@ export default function Home() {
           <span style={s.brandName}>AI Delivery Intelligence</span>
         </div>
         <div style={s.headerRight}>
+          <button onClick={toggleTheme} style={s.themeBtn} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
           <span style={s.userLabel} className="mono">{user}</span>
           <button className="btn-ghost" onClick={() => { signOut(); navigate("/login"); }}>
             Sign out
@@ -45,10 +50,10 @@ export default function Home() {
           <div style={s.lede}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
               {[
-                { label: "PM",      color: "#22d3ee" },
-                { label: "Talent",  color: "#a78bfa" },
+                { label: "PM",      color: "#A100FF" },
+                { label: "Talent",  color: "#c84bff" },
                 { label: "Code",    color: "#34d399" },
-                { label: "FinOps",  color: "#fbbf24" },
+                { label: "FinOps",  color: "#f97316" },
               ].map(a => (
                 <span key={a.label} style={{
                   fontSize: 11, fontWeight: 700, letterSpacing: "0.06em",
@@ -90,7 +95,7 @@ export default function Home() {
                 key={m.id}
                 style={{
                   ...s.card,
-                  borderColor: isHover ? accent + "55" : "rgba(42,49,64,0.8)",
+                  borderColor: isHover ? accent + "55" : undefined,
                   boxShadow: isHover
                     ? `0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px ${accent}35, 0 0 60px ${accent}10`
                     : s.card.boxShadow,
@@ -172,13 +177,13 @@ const s = {
   glowA: {
     position: "fixed", top: "-30%", left: "-8%",
     width: "60vw", height: "65vh",
-    background: "radial-gradient(ellipse, rgba(34,211,238,0.08) 0%, transparent 70%)",
+    background: "radial-gradient(ellipse, rgba(161,0,255,0.08) 0%, transparent 70%)",
     pointerEvents: "none", zIndex: 0,
   },
   glowB: {
     position: "fixed", bottom: "-25%", right: "-5%",
     width: "50vw", height: "55vh",
-    background: "radial-gradient(ellipse, rgba(167,139,250,0.08) 0%, transparent 70%)",
+    background: "radial-gradient(ellipse, rgba(200,75,255,0.08) 0%, transparent 70%)",
     pointerEvents: "none", zIndex: 0,
   },
   header: {
@@ -190,7 +195,7 @@ const s = {
   brand: { display: "flex", alignItems: "center", gap: "10px" },
   mark: {
     fontSize: "18px",
-    background: "linear-gradient(135deg, #22d3ee, #a78bfa)",
+    background: "linear-gradient(135deg, #A100FF, #c84bff)",
     WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
     backgroundClip: "text",
   },
@@ -200,6 +205,7 @@ const s = {
   },
   headerRight: { display: "flex", alignItems: "center", gap: "14px" },
   userLabel: { fontSize: "12px", color: "var(--text-mute)" },
+  themeBtn: { fontSize: 16, background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius)", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-dim)", transition: "all 0.15s" },
   main: {
     position: "relative", zIndex: 1,
     maxWidth: "1080px", margin: "0 auto", padding: "72px 32px 56px",
@@ -233,9 +239,9 @@ const s = {
   chip2: {
     display: "inline-flex", alignItems: "center", gap: "6px",
     fontSize: "12px", fontWeight: 600,
-    color: "rgba(255,255,255,0.55)",
-    background: "rgba(255,255,255,0.04)",
-    border: "1px solid rgba(255,255,255,0.09)",
+    color: "var(--text-dim)",
+    background: "var(--surface-2)",
+    border: "1px solid var(--border)",
     borderRadius: "20px",
     padding: "5px 12px",
     letterSpacing: "0.02em",
@@ -248,8 +254,8 @@ const s = {
   },
   card: {
     textAlign: "left",
-    background: "rgba(22,27,38,0.9)",
-    border: "1px solid rgba(42,49,64,0.8)",
+    background: "var(--surface)",
+    border: "1px solid var(--border)",
     borderRadius: "var(--radius-xl)",
     cursor: "pointer",
     display: "flex", flexDirection: "column", overflow: "hidden",

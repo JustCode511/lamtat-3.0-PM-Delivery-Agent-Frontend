@@ -157,6 +157,41 @@ export async function streamChat(module, sessionId, message, onDelta, onDone) {
   }
 }
 
+/* ---------- Talent Management ---------- */
+export async function getTalentDashboard() {
+  return request("/talent/dashboard");
+}
+
+export async function getTalentEmployees(params = {}) {
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== ""))
+  ).toString();
+  return request(`/talent/employees${qs ? `?${qs}` : ""}`);
+}
+
+export async function getTalentEmployee(id) {
+  return request(`/talent/employees/${id}`);
+}
+
+export async function getTalentProjects() {
+  return request("/talent/projects");
+}
+
+export async function getTalentSkills() {
+  return request("/talent/skills");
+}
+
+export async function getTalentMatrix(params = {}) {
+  const qs = new URLSearchParams(
+    Object.fromEntries(Object.entries(params).filter(([, v]) => v))
+  ).toString();
+  return request(`/talent/matrix${qs ? `?${qs}` : ""}`);
+}
+
+export async function triggerTalentSync() {
+  return request("/talent/sync", { method: "POST" });
+}
+
 /* ============================================================
    Mock fallback data — lets the UI run before the backend is ready.
    Delete or set USE_MOCK_FALLBACK=false once endpoints are live.
