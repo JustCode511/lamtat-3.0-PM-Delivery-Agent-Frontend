@@ -7,6 +7,14 @@ import { MODULE_LIST } from "../modules.js";
 const ACCENT_HEX = { pm: "#A100FF", talent: "#c84bff", code: "#34d399", finops: "#f97316" };
 const MODULE_NUM  = ["01", "02", "03", "04"];
 
+// Up to two initials for the header avatar ("Parth Kansara" -> "PK", "chaithanya" -> "CH").
+function initials(name) {
+  if (!name) return "?";
+  const parts = String(name).trim().split(/\s+/);
+  if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return String(name).slice(0, 2).toUpperCase();
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -29,7 +37,10 @@ export default function Home() {
           <button onClick={toggleTheme} style={s.themeBtn} title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}>
             {theme === "dark" ? "☀" : "☾"}
           </button>
-          <span style={s.userLabel} className="mono">{user}</span>
+          <div style={s.userChip} title={user}>
+            <div style={s.avatar}>{initials(user)}</div>
+            <span style={s.userLabel} className="mono">{user}</span>
+          </div>
           <button className="btn-ghost" onClick={() => { signOut(); navigate("/login"); }}>
             Sign out
           </button>
@@ -205,6 +216,14 @@ const s = {
   },
   headerRight: { display: "flex", alignItems: "center", gap: "14px" },
   userLabel: { fontSize: "12px", color: "var(--text-mute)" },
+  userChip: { display: "flex", alignItems: "center", gap: "8px" },
+  avatar: {
+    width: "28px", height: "28px", borderRadius: "50%",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    fontSize: "11px", fontWeight: 800, fontFamily: "var(--font-display)",
+    flexShrink: 0, letterSpacing: "0.02em",
+    background: "#A100FF22", color: "#A100FF", border: "1px solid #A100FF55",
+  },
   themeBtn: { fontSize: 16, background: "none", border: "1px solid var(--border)", borderRadius: "var(--radius)", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "var(--text-dim)", transition: "all 0.15s" },
   main: {
     position: "relative", zIndex: 1,
