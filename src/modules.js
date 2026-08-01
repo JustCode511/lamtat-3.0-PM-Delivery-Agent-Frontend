@@ -22,6 +22,16 @@ export const MODULES = {
     description:
       "Map skills, plan capacity, and surface the right people for the right work across project accounts.",
   },
+  finops: {
+    id: "finops",
+    name: "Cloud FinOps",
+    tagline: "Cost visibility, anomalies, rightsizing",
+    accent: "var(--finops)",
+    code: "FO",
+    hasProjects: true,
+    description:
+      "Real-time AWS cost visibility, anomaly detection, and rightsizing recommendations your teams can act on.",
+  },
   code: {
     id: "code",
     name: "Code Generation",
@@ -31,16 +41,6 @@ export const MODULES = {
     hasProjects: false,
     description:
       "Generate code and docs, then run a first-pass automated review before routing to a human reviewer for merge.",
-  },
-  finops: {
-    id: "finops",
-    name: "Cloud FinOps",
-    tagline: "Cost visibility, anomalies, rightsizing",
-    accent: "var(--finops)",
-    code: "FO",
-    hasProjects: false,
-    description:
-      "Real-time AWS cost visibility, anomaly detection, and rightsizing recommendations your teams can act on.",
   },
 };
 
