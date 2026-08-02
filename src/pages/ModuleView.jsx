@@ -163,7 +163,7 @@ const s = {
     backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
     border: "1px solid rgba(42,49,64,0.6)",
     borderRadius: "var(--radius-lg)",
-    padding: "24px", minHeight: 0, overflow: "hidden",
+    padding: "24px", minHeight: 0, overflowY: "auto", overflowX: "hidden",
     position: "relative",
   },
   chatCol: { minHeight: 0 },

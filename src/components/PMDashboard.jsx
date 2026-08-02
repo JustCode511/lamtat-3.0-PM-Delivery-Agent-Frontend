@@ -368,10 +368,29 @@ function _actionText(ev) {
   }
 }
 
+// Bucket activity events by recency for the segmented feed (newest first within each).
+const _ACT_ORDER = ["Recent", "This week", "Last month", "Older"];
+function groupActivityByRecency(events) {
+  const now = Date.now();
+  const DAY = 86400000;
+  const buckets = { "Recent": [], "This week": [], "Last month": [], "Older": [] };
+  for (const ev of events) {
+    const t = ev.timestamp ? new Date(ev.timestamp).getTime() : 0;
+    const age = now - t;
+    if (age < DAY) buckets["Recent"].push(ev);
+    else if (age < 7 * DAY) buckets["This week"].push(ev);
+    else if (age < 30 * DAY) buckets["Last month"].push(ev);
+    else buckets["Older"].push(ev);
+  }
+  return _ACT_ORDER.map(label => ({ label, items: buckets[label] })).filter(g => g.items.length);
+}
+
 function ActivityFeed() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [collapsed, setCollapsed] = useState({}); // { "This week": true } = collapsed
+  const toggleGroup = (label) => setCollapsed(c => ({ ...c, [label]: !c[label] }));
 
   async function load() {
     try {
@@ -413,7 +432,22 @@ function ActivityFeed() {
           <div style={s.activityEmpty}>No recent activity in the last 7 days.</div>
         ) : (
           <div style={s.activityTimeline}>
-            {events.map((ev, i) => {
+            {groupActivityByRecency(events).map(group => {
+              const isCollapsed = !!collapsed[group.label];
+              return (
+              <div key={group.label}>
+                <div
+                  style={s.activityGroupLabel}
+                  onClick={() => toggleGroup(group.label)}
+                  role="button"
+                  aria-expanded={!isCollapsed}
+                  title={isCollapsed ? "Expand" : "Collapse"}
+                >
+                  <span style={{ ...s.activityGroupChevron, transform: isCollapsed ? "rotate(-90deg)" : "none" }}>▾</span>
+                  <span>{group.label}</span>
+                  <span style={s.activityGroupCount}>{group.items.length}</span>
+                </div>
+                {!isCollapsed && group.items.map((ev, i) => {
               const cfg = _EV[ev.type] || { color: "#6b7688", label: ev.type };
               const avc = _avatarColor(ev.author);
               return (
@@ -447,6 +481,9 @@ function ActivityFeed() {
                   )}
                   </div>
                 </div>
+              );
+                })}
+              </div>
               );
             })}
           </div>
@@ -803,7 +840,7 @@ const s = {
   // Overview root: a flex column that fills the dashboard column height so the
   // activity feed can flex to fit any screen — instead of a fixed-height box
   // that leaves a gap on large desktops and double-scrolls on laptops.
-  overviewWrap: { height:"100%", paddingRight:2, display:"flex", flexDirection:"column", gap:14, minHeight:0 },
+  overviewWrap: { minHeight:"100%", paddingRight:2, display:"flex", flexDirection:"column", gap:14 },
 
   /* top bar */
   topBar: { display:"flex", alignItems:"flex-start", justifyContent:"space-between", flexWrap:"wrap", gap:8 },
@@ -835,6 +872,7 @@ const s = {
     display:"grid", gridTemplateColumns:"repeat(5,1fr)",
     gap:1, background:"var(--border)", borderRadius:12,
     overflow:"hidden", border:"1px solid var(--border)",
+    flexShrink:0,   // never let the stat numbers get vertically squeezed/clipped
   },
   metCard: {
     background:"var(--surface-1)", padding:"14px 12px",
@@ -874,7 +912,7 @@ const s = {
   empty: { color:"var(--text-muted)", fontSize:13, textAlign:"center", padding:"32px 0" },
 
   /* card grid */
-  cardGrid: { display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12 },
+  cardGrid: { display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, flexShrink:0 },
   card: {
     background:"var(--surface-1)", borderRadius:12,
     border:"1px solid var(--border)", borderLeft:"3px solid",
@@ -967,7 +1005,7 @@ const s = {
     borderLeft:"3px solid", borderRadius:12, overflow:"hidden",
   },
   /* activity feed */
-  activitySection: { display: "flex", flexDirection: "column", gap: 12, marginTop: 4, flex: 1, minHeight: 0 },
+  activitySection: { display: "flex", flexDirection: "column", gap: 12, marginTop: 4, flex: 1, minHeight: 220 },
   activityWrap: {
     background: "var(--surface-1)", border: "1px solid var(--border)",
     borderRadius: 12, overflow: "hidden",
@@ -976,6 +1014,23 @@ const s = {
   activityTimeline: {
     display: "flex", flexDirection: "column",
     flex: 1, minHeight: 0, overflowY: "auto",
+  },
+  activityGroupLabel: {
+    position: "sticky", top: 0, zIndex: 1,
+    display: "flex", alignItems: "center", gap: 7,
+    fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em",
+    color: "var(--text-muted)", background: "var(--surface-1)",
+    padding: "9px 14px 7px", borderBottom: "1px solid var(--border)",
+    cursor: "pointer", userSelect: "none",
+  },
+  activityGroupChevron: {
+    fontSize: 9, lineHeight: 1, color: "var(--text-muted)",
+    transition: "transform 0.15s ease", display: "inline-block",
+  },
+  activityGroupCount: {
+    marginLeft: "auto", fontSize: 9, fontWeight: 700,
+    color: "var(--text-muted)", background: "var(--surface-2)",
+    borderRadius: 8, padding: "1px 6px",
   },
   activityEmpty: {
     padding: "20px 16px", fontSize: 12,

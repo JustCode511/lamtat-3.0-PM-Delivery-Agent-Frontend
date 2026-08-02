@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useId } from "react";
-import { streamChat, sendToLeadership, getConversations, getConversation } from "../api/client.js";
+import { streamChat, chatWithPolling, sendToLeadership, getConversations, getConversation, deleteConversation } from "../api/client.js";
 import "./ChatPanel.css";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -12,19 +12,38 @@ async function getMermaid() {
   return _mermaidModule;
 }
 
-// Base config applied on every render (pie colours, theme, etc.)
+// Base config applied on every render. Charts render on a clean WHITE card
+// (see .mermaid-wrap), so text is near-black for strong contrast and the slice
+// palette is bright & fully opaque (Mermaid's default 0.7 opacity washes it out).
+const _INK = "#0f172a";       // near-black text
+const _AXIS = "#475569";      // axis/line grey (still dark enough on white)
 const _BASE_THEME_VARS = {
-  background: "#0d1117",
+  background: "#ffffff",
   primaryColor: "#22d3ee",
-  primaryTextColor: "#e6edf3",
-  primaryBorderColor: "rgba(255,255,255,0.12)",
-  lineColor: "#9aa5b4",
-  secondaryColor: "#1e2a3a",
-  tertiaryColor: "#1a2030",
-  fontSize: "13px",
-  pie1: "#22d3ee", pie2: "#a78bfa", pie3: "#34d399",
-  pie4: "#f97316", pie5: "#f87171", pie6: "#fb923c",
-  pie7: "#60a5fa", pie8: "#e879f9",
+  primaryTextColor: _INK,
+  primaryBorderColor: "#0f172a",
+  lineColor: _AXIS,
+  secondaryColor: "#e2e8f0",
+  tertiaryColor: "#f1f5f9",
+  fontSize: "14px",
+  // Bright, saturated slice palette
+  pie1: "#06b6d4", pie2: "#8b5cf6", pie3: "#10b981",
+  pie4: "#f97316", pie5: "#ef4444", pie6: "#f59e0b",
+  pie7: "#3b82f6", pie8: "#ec4899",
+  pieOpacity: "1",
+  // Pie text → black, not grey; crisp dark slice borders
+  pieTitleTextSize: "18px", pieTitleTextColor: _INK,
+  pieSectionTextSize: "15px", pieSectionTextColor: "#ffffff",
+  pieLegendTextSize: "14px", pieLegendTextColor: _INK,
+  pieStrokeColor: "#0f172a", pieStrokeWidth: "2px",
+  pieOuterStrokeColor: "#0f172a", pieOuterStrokeWidth: "2px",
+  // Bar charts (xychart) — dark labels on the white card
+  xyChart: {
+    backgroundColor: "transparent",
+    titleColor: _INK,
+    xAxisLabelColor: _INK, xAxisTitleColor: _AXIS, xAxisTickColor: _AXIS, xAxisLineColor: _AXIS,
+    yAxisLabelColor: _INK, yAxisTitleColor: _AXIS, yAxisTickColor: _AXIS, yAxisLineColor: _AXIS,
+  },
 };
 
 // Colors cycled through for each xychart rendered in this session
@@ -46,6 +65,39 @@ function _fixIntegerTicks(svgStr) {
 function clean(str) { return (str || "").replace(/[*_`]/g, "").trim(); }
 
 // Compact relative time for the history sidebar ("just now", "5m ago", …)
+// Personalised, time-of-day greeting shown on a fresh chat (Claude/ChatGPT style).
+function buildGreeting(username) {
+  const h = new Date().getHours();
+  const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+  const name = username ? ` ${username}` : "";
+  const openers = [
+    "What can I help you deliver today?",
+    "Which project should we dig into?",
+    "Status, risks, or a leadership report — where do we start?",
+    "Ready when you are. What would you like to look at?",
+    "How can I help move your projects forward today?",
+  ];
+  const opener = openers[Math.floor(Math.random() * openers.length)];
+  return `**${part}${name}** 👋\n\n${opener}`;
+}
+
+// Group conversations into recency buckets for the sidebar (newest first within each).
+const RECENCY_ORDER = ["Recents", "Last week", "Last month", "Older"];
+function groupByRecency(convos) {
+  const now = Date.now();
+  const DAY = 86400000;
+  const buckets = { "Recents": [], "Last week": [], "Last month": [], "Older": [] };
+  for (const c of convos) {
+    const t = c.updated_at ? new Date(c.updated_at).getTime() : 0;
+    const age = now - t;
+    if (age < DAY) buckets["Recents"].push(c);
+    else if (age < 7 * DAY) buckets["Last week"].push(c);
+    else if (age < 30 * DAY) buckets["Last month"].push(c);
+    else buckets["Older"].push(c);
+  }
+  return RECENCY_ORDER.map(label => ({ label, items: buckets[label] })).filter(g => g.items.length);
+}
+
 function relTime(iso) {
   if (!iso) return "";
   const then = new Date(iso).getTime();
@@ -104,7 +156,7 @@ const AGENT_TIPS = [
   { icon: "🚀", prompt: "What should be prioritized this sprint?", hint: "AI-driven recommendations based on current project state" },
 ];
 
-function ThinkingPanel({ accent }) {
+function ThinkingPanel({ accent, label }) {
   const [idx,    setIdx]    = useState(() => Math.floor(Math.random() * AGENT_TIPS.length));
   const [fading, setFading] = useState(false);
 
@@ -121,7 +173,7 @@ function ThinkingPanel({ accent }) {
     <div className="thinking-panel">
       <div className="thinking-dots">
         <span className="dot" /><span className="dot" /><span className="dot" />
-        <span className="thinking-label">Agent is working…</span>
+        <span className="thinking-label">{label || "Agent is working…"}</span>
       </div>
       <div className={`thinking-tip-card${fading ? " fading" : ""}`}>
         <span className="tip-icon">{tip.icon}</span>
@@ -197,12 +249,11 @@ function MermaidChart({ code }) {
         const m = await getMermaid();
         m.initialize({
           startOnLoad: false,
-          theme: "dark",
-          darkMode: true,
+          theme: "base",
           themeVariables: {
             ..._BASE_THEME_VARS,
             // Each xychart gets its own color; pie charts use pie1-8 from BASE
-            xyChart: { plotColorPalette: colorRef.current },
+            xyChart: { ..._BASE_THEME_VARS.xyChart, plotColorPalette: colorRef.current },
           },
         });
         const { svg: out } = await m.render(uid, code);
@@ -857,16 +908,19 @@ function LeadershipPrompt({ text, accent, onAction }) {
 
 function StreamingMessage({ text, accent }) {
   if (!text) return <ThinkingPanel accent={accent} />;
+  // Render the report as FORMATTED markdown while it types in (headings, tables,
+  // bold) — never raw source. Mermaid is shown as a placeholder mid-stream (the
+  // real chart renders in the final card), so nothing half-parsed flashes.
   return (
     <div className="default-msg streaming-msg">
-      <span className="streaming-text">{text}</span>
-      <span className="streaming-cursor" aria-hidden="true" />
+      <RichMarkdown text={text} />
     </div>
   );
 }
 
 function MessageRenderer({ msg, accent }) {
   const { text, ui_hint } = msg;
+  if (ui_hint === "thinking")  return <ThinkingPanel accent={accent} label={text} />;
   if (ui_hint === "streaming") return <StreamingMessage text={text} accent={accent} />;
   switch (ui_hint) {
     // ── Active backend intents ──────────────────────────────────────────
@@ -890,7 +944,10 @@ function MessageRenderer({ msg, accent }) {
 export { MessageRenderer };
 
 export default function ChatPanel({ moduleId, accent, greeting }) {
-  const [messages,    setMessages]    = useState([{ role: "assistant", text: greeting, ui_hint: "default" }]);
+  // Personalised welcome (falls back to the module's static greeting prop).
+  const username = (typeof localStorage !== "undefined" && localStorage.getItem("username")) || "";
+  const welcome = () => ({ role: "assistant", text: buildGreeting(username) || greeting, ui_hint: "default" });
+  const [messages,    setMessages]    = useState(() => [welcome()]);
   const [input,       setInput]       = useState("");
   const [busy,        setBusy]        = useState(false);
   const [fullscreen,  setFullscreen]  = useState(false);
@@ -898,9 +955,22 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
   const [conversations, setConversations] = useState([]);
   const [loadingConvos, setLoadingConvos] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(null); // {session_id, title} awaiting confirm
+  const [collapsedGroups, setCollapsedGroups] = useState({}); // { "Last week": true } = collapsed
+  const toggleGroup = (label) => setCollapsedGroups(c => ({ ...c, [label]: !c[label] }));
   const bottomRef    = useRef(null);
+  const scrollRef    = useRef(null);
+  const stickRef     = useRef(true);   // auto-follow the newest content?
   const textareaRef  = useRef(null);
   const histWrapRef  = useRef(null);
+
+  // Pin to the newest content WITHOUT smooth animation — instant pin avoids the
+  // shaking/fighting you get from many overlapping smooth scrolls during the
+  // ~45 type-out updates. Only follows when the user is already at the bottom.
+  const pinToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (el && stickRef.current) el.scrollTop = el.scrollHeight;
+  }, []);
 
   // Close history dropdown on outside click
   useEffect(() => {
@@ -914,7 +984,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, [historyOpen]);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, busy]);
+  useEffect(() => { pinToBottom(); }, [messages, busy, pinToBottom]);
 
   // ── History sidebar ────────────────────────────────────────────────
   const refreshConversations = useCallback(async () => {
@@ -930,7 +1000,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
 
   function newChat() {
     setSessionId(`${moduleId}-${Math.random().toString(36).slice(2, 10)}`);
-    setMessages([{ role: "assistant", text: greeting, ui_hint: "default" }]);
+    setMessages([welcome()]);
   }
 
   async function loadConversation(sid) {
@@ -941,9 +1011,37 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
         role: m.role, text: m.content, ui_hint: m.ui_hint || "default",
       }));
       setSessionId(sid);
-      setMessages(mapped.length ? mapped : [{ role: "assistant", text: greeting, ui_hint: "default" }]);
+      setMessages(mapped.length ? mapped : [welcome()]);
     } catch { /* couldn't load — leave current chat as-is */ }
   }
+
+  // Open the in-app confirm modal (replaces the native browser confirm()).
+  function askDelete(cv, e) {
+    e?.stopPropagation();
+    setPendingDelete({ session_id: cv.session_id, title: cv.title });
+  }
+
+  async function confirmDelete() {
+    const sid = pendingDelete?.session_id;
+    setPendingDelete(null);
+    if (!sid) return;
+    // Optimistic removal — drop it from the list immediately.
+    setConversations(cs => cs.filter(c => c.session_id !== sid));
+    try {
+      await deleteConversation(sid);
+    } catch { /* already gone / offline — the next refresh reconciles */ }
+    // If we deleted the chat we're viewing, start a fresh one.
+    if (sid === sessionId) newChat();
+    refreshConversations();
+  }
+
+  // Esc closes the confirm modal.
+  useEffect(() => {
+    if (!pendingDelete) return;
+    const onEsc = (e) => { if (e.key === "Escape") setPendingDelete(null); };
+    document.addEventListener("keydown", onEsc);
+    return () => document.removeEventListener("keydown", onEsc);
+  }, [pendingDelete]);
 
   // Refresh the history list whenever the panel is expanded to fullscreen.
   useEffect(() => { if (fullscreen) refreshConversations(); }, [fullscreen, refreshConversations]);
@@ -951,37 +1049,54 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
   const send = useCallback(async () => {
     const text = input.trim();
     if (!text || busy) return;
+    stickRef.current = true;          // follow the new response to the bottom
     setInput("");
     // reset textarea height after clearing
     if (textareaRef.current) { textareaRef.current.style.height = "auto"; }
     setMessages(m => [...m, { role: "user", text }]);
     setBusy(true);
 
-    // Placeholder streaming message — updated in-place as chunks arrive
+    // Placeholder bubble — starts as an animated "thinking" panel, then becomes
+    // the formatted streaming text, then the final rich card.
     const streamId = Symbol("stream");
-    setMessages(m => [...m, { role: "assistant", text: "", ui_hint: "streaming", _id: streamId }]);
+    setMessages(m => [...m, { role: "assistant", text: "", ui_hint: "thinking", _id: streamId }]);
+
+    // Animated thinking state with a live progress label.
+    const setThinking = (label) =>
+      setMessages(m => m.map(msg => msg._id === streamId ? { ...msg, text: label, ui_hint: "thinking" } : msg));
+    // Formatted markdown reveal (typing).
+    const setTyping = (txt) =>
+      setMessages(m => m.map(msg => msg._id === streamId ? { ...msg, text: txt, ui_hint: "streaming" } : msg));
+    // Swap for the final rich card.
+    const finalize = (intent, full, reportable) =>
+      setMessages(m => m.map(msg => msg._id === streamId
+        ? { role: "assistant", text: full, ui_hint: intent || "default", reportable: !!reportable }
+        : msg
+      ));
 
     try {
-      await streamChat(
-        moduleId,
-        sessionId,
-        text,
-        // onDelta — append chunk to the streaming bubble
-        (delta) => {
-          setMessages(m =>
-            m.map(msg => msg._id === streamId ? { ...msg, text: msg.text + delta } : msg)
-          );
-        },
-        // onDone — swap streaming bubble for the final rich card
-        (intent, full, reportable) => {
-          setMessages(m =>
-            m.map(msg => msg._id === streamId
-              ? { role: "assistant", text: full, ui_hint: intent || "default", reportable: !!reportable }
-              : msg
-            )
-          );
-        }
-      );
+      if (moduleId === "pm") {
+        // Async + poll — beats API Gateway's 30s cap so long reports never fail.
+        await chatWithPolling(moduleId, sessionId, text, {
+          onThinking: setThinking,
+          onType: setTyping,
+          onDone: finalize,
+        });
+      } else {
+        // Other modules keep the direct SSE stream (their replies are quick).
+        await streamChat(
+          moduleId,
+          sessionId,
+          text,
+          (delta) => setMessages(m => m.map(msg => {
+            if (msg._id !== streamId) return msg;
+            // First delta switches out of the thinking panel into streaming text.
+            const base = msg.ui_hint === "streaming" ? msg.text : "";
+            return { ...msg, text: base + delta, ui_hint: "streaming" };
+          })),
+          finalize,
+        );
+      }
     } catch {
       setMessages(m =>
         m.map(msg => msg._id === streamId
@@ -992,6 +1107,9 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
     } finally {
       setBusy(false);
       textareaRef.current?.focus();
+      // The final card's chart (mermaid) lazy-renders after this, changing the
+      // height — re-pin a few times so the view settles on the END of the report.
+      [200, 700, 1500].forEach(d => setTimeout(pinToBottom, d));
       // A new/updated conversation may now exist — refresh the sidebar.
       refreshConversations();
     }
@@ -1003,6 +1121,23 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
 
   return (
     <div className={`chat-wrap${fullscreen ? " chat-fullscreen" : ""}`}>
+      {/* In-app delete confirmation (replaces the native browser confirm) */}
+      {pendingDelete && (
+        <div className="cd-overlay" onClick={() => setPendingDelete(null)}>
+          <div className="cd-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="cd-title">Delete chat?</div>
+            <div className="cd-body">
+              <span className="cd-name">“{pendingDelete.title || "This conversation"}”</span> will be
+              permanently deleted. This can’t be undone.
+            </div>
+            <div className="cd-actions">
+              <button className="cd-btn cd-cancel" onClick={() => setPendingDelete(null)} autoFocus>Cancel</button>
+              <button className="cd-btn cd-delete" onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* History sidebar — only in fullscreen (Claude-style) */}
       {fullscreen && (
         <aside className="chat-history">
@@ -1016,17 +1151,46 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
             ) : conversations.length === 0 ? (
               <div className="ch-empty">No conversations yet</div>
             ) : (
-              conversations.map(cv => (
-                <button
-                  key={cv.session_id}
-                  className={`ch-item${cv.session_id === sessionId ? " active" : ""}`}
-                  onClick={() => loadConversation(cv.session_id)}
-                  style={cv.session_id === sessionId ? { borderColor: accent + "66" } : undefined}
-                >
-                  <span className="ch-item-title">{cv.title}</span>
-                  <span className="ch-item-time">{relTime(cv.updated_at)}</span>
-                </button>
-              ))
+              groupByRecency(conversations).map(group => {
+                const isCollapsed = !!collapsedGroups[group.label];
+                return (
+                <div className="ch-group" key={group.label}>
+                  <button
+                    className="ch-group-label"
+                    onClick={() => toggleGroup(group.label)}
+                    aria-expanded={!isCollapsed}
+                    title={isCollapsed ? "Expand" : "Collapse"}
+                  >
+                    <span className={`ch-group-chevron${isCollapsed ? " collapsed" : ""}`}>▾</span>
+                    <span>{group.label}</span>
+                    <span className="ch-group-count">{group.items.length}</span>
+                  </button>
+                  {!isCollapsed && group.items.map(cv => (
+                    <div
+                      key={cv.session_id}
+                      className={`ch-item-row${cv.session_id === sessionId ? " active" : ""}`}
+                      style={cv.session_id === sessionId ? { borderColor: accent + "66" } : undefined}
+                    >
+                      <button className="ch-item" onClick={() => loadConversation(cv.session_id)}>
+                        <span className="ch-item-title">{cv.title}</span>
+                        <span className="ch-item-time">{relTime(cv.updated_at)}</span>
+                      </button>
+                      <button
+                        className="ch-item-del"
+                        title="Delete conversation"
+                        aria-label="Delete conversation"
+                        onClick={(e) => askDelete(cv, e)}
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        </svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                );
+              })
             )}
           </div>
         </aside>
@@ -1104,7 +1268,14 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
       </div>
 
       {/* Messages */}
-      <div className="chat-scroll">
+      <div
+        className="chat-scroll"
+        ref={scrollRef}
+        onScroll={() => {
+          const el = scrollRef.current;
+          if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 120;
+        }}
+      >
         {messages.map((msg, i) => (
           <div key={i} className={`msg-row ${msg.role}`}>
             {msg.role === "user" ? (
@@ -1134,7 +1305,7 @@ export default function ChatPanel({ moduleId, accent, greeting }) {
             )}
           </div>
         ))}
-        {busy && !messages.some(m => m.ui_hint === "streaming") && (
+        {busy && !messages.some(m => m.ui_hint === "streaming" || m.ui_hint === "thinking") && (
           <div className="msg-row assistant">
             <div className="assistant-bubble">
               <div className="agent-avatar" style={{ background: accent+"22", color: accent }}>AI</div>
