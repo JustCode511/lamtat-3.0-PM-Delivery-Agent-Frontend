@@ -5,6 +5,8 @@ import { useTheme } from "../context/ThemeContext.jsx";
 import ChatPanel from "../components/ChatPanel.jsx";
 import PMDashboard from "../components/PMDashboard.jsx";
 import TalentDashboard from "../components/TalentDashboard.jsx";
+import FinOpsDashboard from "../components/FinOpsDashboard.jsx";
+import FinOpsServicesPanel from "../components/FinOpsServicesPanel.jsx";
 
 const ACCENT_HEX = { pm: "#A100FF", talent: "#c84bff", code: "#34d399", finops: "#f97316" };
 
@@ -78,10 +80,14 @@ export default function ModuleView() {
             ? <PMDashboard accentHex={accentHex} />
             : mod.id === "talent"
             ? <TalentDashboard accentHex={accentHex} />
+            : mod.id === "finops"
+            ? <FinOpsDashboard accentHex={accentHex} />
             : <ComingSoon mod={mod} accentHex={accentHex} />}
         </section>
         <section style={s.chatCol}>
-          <ChatPanel moduleId={mod.id} accent={accentHex} greeting={GREETINGS[mod.id]} />
+          {mod.id === "finops"
+            ? <FinOpsServicesPanel accentHex={accentHex} />
+            : <ChatPanel moduleId={mod.id} accent={accentHex} greeting={GREETINGS[mod.id]} />}
         </section>
       </div>
     </div>

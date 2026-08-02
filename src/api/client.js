@@ -276,6 +276,38 @@ export async function triggerTalentSync() {
   return request("/talent/sync", { method: "POST" });
 }
 
+/* ---------- Cloud FinOps ---------- */
+export async function getFinopsDashboard() {
+  return request("/finops/dashboard");
+}
+
+export async function getFinopsCosts(days = 30) {
+  return request(`/finops/costs?days=${days}`);
+}
+
+export async function getFinopsAnomalies() {
+  return request("/finops/anomalies");
+}
+
+export async function getFinopsRightsizing() {
+  return request("/finops/rightsizing");
+}
+
+export async function getFinopsBudget() {
+  return request("/finops/budget");
+}
+
+export async function setFinopsBudget(targetMonthlyBudget) {
+  return request("/finops/budget", {
+    method: "POST",
+    body: JSON.stringify({ target_monthly_budget: targetMonthlyBudget }),
+  });
+}
+
+export async function sendFinopsSlackDigest() {
+  return request("/finops/slack-digest", { method: "POST", body: JSON.stringify({}) });
+}
+
 /* ============================================================
    Mock fallback data — lets the UI run before the backend is ready.
    Delete or set USE_MOCK_FALLBACK=false once endpoints are live.
