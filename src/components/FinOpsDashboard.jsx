@@ -3,6 +3,8 @@ import {
   getFinopsDashboard,
   setFinopsBudget,
   sendFinopsSlackDigest,
+  getFinopsLiveDataSetting,
+  setFinopsLiveDataSetting,
 } from "../api/client.js";
 
 const ACCENT = "#f97316";
@@ -26,6 +28,8 @@ export default function FinOpsDashboard({ accentHex = ACCENT }) {
   const [error, setError]     = useState(null);
   const [sending, setSending] = useState(false);
   const [sendMsg, setSendMsg] = useState(null);
+  const [liveEnabled, setLiveEnabled] = useState(null);
+  const [toggling, setToggling] = useState(false);
 
   const loadData = useCallback(() => {
     setLoading(true);
@@ -37,6 +41,12 @@ export default function FinOpsDashboard({ accentHex = ACCENT }) {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  useEffect(() => {
+    getFinopsLiveDataSetting()
+      .then(r => setLiveEnabled(r.live_data_enabled))
+      .catch(() => {}); // header still renders fine without the toggle's state
+  }, []);
+
   const handleDigest = async () => {
     setSending(true);
     setSendMsg(null);
@@ -47,6 +57,20 @@ export default function FinOpsDashboard({ accentHex = ACCENT }) {
       setSendMsg(`Send failed: ${e.message}`);
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleToggleLive = async () => {
+    if (liveEnabled === null || toggling) return;
+    setToggling(true);
+    try {
+      const r = await setFinopsLiveDataSetting(!liveEnabled);
+      setLiveEnabled(r.live_data_enabled);
+      loadData();
+    } catch (e) {
+      setSendMsg(`Couldn't switch data source: ${e.message}`);
+    } finally {
+      setToggling(false);
     }
   };
 
@@ -65,9 +89,22 @@ export default function FinOpsDashboard({ accentHex = ACCENT }) {
               <span style={s.acctChip} className="mono" title="AWS account ID">{stats.cost_summary.account_id}</span>
             )}
           </div>
-          <span style={s.topSub}>Live AWS cost visibility · AI anomaly & rightsizing insights</span>
+          <span style={s.topSub}>AWS cost visibility · AI anomaly & rightsizing insights</span>
         </div>
         <div style={s.headActions}>
+          <button
+            style={{
+              ...s.liveToggle,
+              ...(liveEnabled ? s.liveToggleOn : s.liveToggleOff),
+              opacity: liveEnabled === null || toggling ? 0.6 : 1,
+            }}
+            onClick={handleToggleLive}
+            disabled={liveEnabled === null || toggling}
+            title={liveEnabled ? "Hitting real AWS Cost Explorer — costs $0.01/request. Click to switch to mock data." : "Showing fabricated mock data — no AWS charges. Click to switch to live AWS data."}
+          >
+            <span style={{ ...s.liveDot, background: liveEnabled ? "var(--ok)" : "var(--text-mute)" }} />
+            {toggling ? "Switching…" : liveEnabled ? "Live AWS" : "Mock data"}
+          </button>
           <button
             style={{ ...s.digestBtn, opacity: sending ? 0.6 : 1 }}
             onClick={handleDigest}
@@ -139,7 +176,7 @@ function OverviewTab({ stats, accentHex }) {
         {cards.map(c => <StatCard key={c.label} {...c} />)}
       </div>
 
-      <DailyTrendPanel trend={cs.daily_trend} accentHex={accentHex} />
+      <DailyTrendPanel trend={cs.daily_trend} accentHex={accentHex} dataSource={cs.data_source} />
     </>
   );
 }
@@ -151,13 +188,13 @@ function budgetColor(status) {
   return { on_track: "var(--ok)", at_risk: "var(--warn)", over_budget: "var(--risk)", no_budget_set: "var(--text-dim)" }[status] || "var(--text-dim)";
 }
 
-function DailyTrendPanel({ trend, accentHex }) {
+function DailyTrendPanel({ trend, accentHex, dataSource }) {
   const max = Math.max(...trend.map(p => p.amount), 0.01);
   return (
     <div style={s.panel}>
       <div style={s.panelHead}>
         <span style={s.panelTitle}>Daily Spend Trend</span>
-        <span style={s.panelSub}>{trend.length} days · live Cost Explorer data</span>
+        <span style={s.panelSub}>{trend.length} days · {dataSource === "mock" ? "mock data" : "live Cost Explorer data"}</span>
       </div>
       <div style={s.barRow}>
         {trend.map(p => (
@@ -391,7 +428,7 @@ function Skeleton({ accentHex }) {
             <span style={{ ...s.badge, color: accentHex, borderColor: accentHex + "45", background: accentHex + "10" }} className="mono">FO</span>
             <h2 style={s.title}>Cloud FinOps</h2>
           </div>
-          <span style={s.skelLoadingNote}>Fetching live AWS Cost Explorer data…</span>
+          <span style={s.skelLoadingNote}>Fetching FinOps data…</span>
         </div>
       </div>
       <div style={s.grid}>
@@ -440,6 +477,10 @@ const s = {
   acctChip:{ fontSize: 11, color: "var(--text-mute)", background: "var(--surface-2)", border: "1px solid var(--border)", borderRadius: 20, padding: "2px 10px" },
   skelLoadingNote: { fontSize: 11, color: "var(--text-mute)", fontStyle: "italic" },
   digestBtn: { fontSize: 12, fontWeight: 600, color: "var(--signal)", background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.25)", borderRadius: "var(--radius)", padding: "6px 14px", cursor: "pointer", transition: "all 0.15s" },
+  liveToggle: { display: "flex", alignItems: "center", gap: 7, fontSize: 12, fontWeight: 600, borderRadius: "var(--radius)", padding: "6px 14px", cursor: "pointer", transition: "all 0.15s", border: "1px solid" },
+  liveToggleOn: { color: "var(--ok)", background: "rgba(52,211,153,0.08)", borderColor: "rgba(52,211,153,0.25)" },
+  liveToggleOff: { color: "var(--text-dim)", background: "var(--surface-2)", borderColor: "var(--border)" },
+  liveDot: { width: 6, height: 6, borderRadius: "50%", flexShrink: 0 },
   agentLink: { fontSize: 12, fontWeight: 700, border: "1px solid", borderRadius: "var(--radius)", padding: "6px 14px", textDecoration: "none", whiteSpace: "nowrap" },
   sendBanner: { fontSize: 12, color: "var(--ok)", background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)", borderRadius: "var(--radius)", padding: "8px 12px", flexShrink: 0 },
 

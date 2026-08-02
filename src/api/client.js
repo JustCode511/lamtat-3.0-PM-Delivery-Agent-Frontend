@@ -308,6 +308,17 @@ export async function sendFinopsSlackDigest() {
   return request("/finops/slack-digest", { method: "POST", body: JSON.stringify({}) });
 }
 
+export async function getFinopsLiveDataSetting() {
+  return request("/finops/settings/live-data");
+}
+
+export async function setFinopsLiveDataSetting(liveDataEnabled) {
+  return request("/finops/settings/live-data", {
+    method: "POST",
+    body: JSON.stringify({ live_data_enabled: liveDataEnabled }),
+  });
+}
+
 /* ============================================================
    Mock fallback data — lets the UI run before the backend is ready.
    Delete or set USE_MOCK_FALLBACK=false once endpoints are live.
