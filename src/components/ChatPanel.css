@@ -128,22 +128,68 @@
   padding: 14px 10px;
   text-align: center;
 }
+/* Recency group (Recents / Last week / Last month / Older) */
+.ch-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 10px; }
+.ch-group-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  padding: 6px 11px 4px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.12s;
+}
+.ch-group-label:hover { color: var(--text); }
+.ch-group-chevron {
+  font-size: 8px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.15s ease;
+}
+.ch-group-chevron.collapsed { transform: rotate(-90deg); }
+.ch-group-count {
+  margin-left: auto;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--text-mute);
+  background: var(--surface-2);
+  border-radius: 8px;
+  padding: 1px 6px;
+}
+
+/* Row = clickable conversation + hover-revealed delete button */
+.ch-item-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.ch-item-row:hover { background: var(--surface-2); }
+.ch-item-row.active { background: var(--surface-2); border-color: var(--border); }
 .ch-item {
   display: flex;
   flex-direction: column;
   gap: 3px;
   align-items: flex-start;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   text-align: left;
   padding: 9px 11px;
-  border-radius: 8px;
   background: transparent;
-  border: 1px solid transparent;
+  border: none;
   cursor: pointer;
-  transition: background 0.12s, border-color 0.12s;
 }
-.ch-item:hover { background: var(--surface-2); }
-.ch-item.active { background: var(--surface-2); border-color: var(--border); }
 .ch-item-title {
   font-size: 13px;
   color: var(--text);
@@ -155,6 +201,90 @@
 .ch-item-time {
   font-size: 10px;
   color: var(--text-mute);
+}
+.ch-item-del {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  color: var(--text-mute);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.ch-item-row:hover .ch-item-del,
+.ch-item-row.active .ch-item-del { opacity: 1; }
+.ch-item-del:hover { background: rgba(239,68,68,0.14); color: #ef4444; }
+
+/* ── In-app delete confirmation modal ───────────────────────── */
+.cd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(3px);
+  animation: cd-fade 0.12s ease;
+}
+.cd-modal {
+  width: min(380px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 22px 22px 18px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  animation: cd-pop 0.14s ease;
+}
+.cd-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+.cd-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-mute);
+  margin-bottom: 20px;
+  /* Long / unbroken chat titles wrap inside the modal instead of overflowing. */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.cd-name { color: var(--text); font-weight: 600; }
+.cd-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.cd-btn {
+  padding: 8px 18px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.12s, border-color 0.12s, transform 0.05s;
+}
+.cd-btn:active { transform: translateY(1px); }
+.cd-cancel { background: transparent; border-color: var(--border); color: var(--text); }
+.cd-cancel:hover { background: var(--surface-2); }
+.cd-delete { background: #dc2626; color: #fff; }
+.cd-delete:hover { background: #b91c1c; }
+
+@keyframes cd-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cd-pop {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: none; }
 }
 
 /* ── Header ─────────────────────────────────────────────────── */
@@ -1210,13 +1340,16 @@
 
 .mermaid-wrap {
   margin: 10px 0;
-  background: var(--surface);
-  border: 1px solid var(--border);
+  /* Fixed white card so the chart's dark text has strong contrast in BOTH app
+     themes (the Mermaid theme is tuned for a light background). */
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
   padding: 18px 14px 14px;
   display: flex;
   justify-content: center;
   overflow-x: auto;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.10);
 }
 .mermaid-wrap svg {
   max-width: 100%;

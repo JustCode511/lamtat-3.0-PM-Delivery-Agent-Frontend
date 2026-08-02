@@ -98,6 +98,11 @@ export async function getConversation(sessionId) {
   return request(`/pm/conversations/${encodeURIComponent(sessionId)}`);
 }
 
+// Permanently delete a conversation (also removes it from the backend table).
+export async function deleteConversation(sessionId) {
+  return request(`/pm/conversations/${encodeURIComponent(sessionId)}`, { method: "DELETE" });
+}
+
 /* ---------- Chat (works for any module) ---------- */
 export async function sendChat(module, sessionId, message) {
   return request(`/${module}/chat`, {
@@ -155,6 +160,85 @@ export async function streamChat(module, sessionId, message, onDelta, onDone) {
       } catch { /* malformed chunk — skip */ }
     }
   }
+}
+
+/**
+ * Async chat with polling — the robust path for the PM module.
+ *
+ * A leadership report can take ~35s, but API Gateway hard-caps the client
+ * response at 30s (and Lambda Function URLs are blocked on this account). So we
+ * fire the work at /pm/chat/async (which may 504 at 30s — we ignore that), and
+ * poll /pm/chat/result/{job_id} until the still-running Lambda saves the result.
+ * While waiting we show live progress; when done we "type" the report out for a
+ * streaming feel. Never times out the UI.
+ *
+ *   onProgress(text) — replace the bubble text (progress lines, then typing)
+ *   onDone(intent, fullText, reportable) — finalize with the rich card
+ */
+export async function chatWithPolling(module, sessionId, message, { onThinking, onType, onDone }) {
+  const jobId =
+    (typeof crypto !== "undefined" && crypto.randomUUID)
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  // Kick off the work. It may 504 at 30s for long reports — that's expected;
+  // the Lambda keeps running and the result arrives via polling below.
+  fetch(`${BASE}/${module}/chat/async`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ session_id: sessionId, message, job_id: jobId }),
+  }).catch(() => {});
+
+  // Progress labels for the animated "thinking" state (kept reassuring for the
+  // longer all-projects reports so it never looks stuck).
+  const steps = [
+    "🔍 Understanding your request…",
+    "📇 Pulling live Jira data…",
+    "📊 Analysing status & risks…",
+    "✍️ Drafting the report…",
+    "🧮 Formatting charts & tables…",
+    "📋 Compiling every project…",
+    "🔎 Cross-checking the details…",
+    "⏳ Almost there — finalising…",
+  ];
+  const t0 = Date.now();
+  let result = null;
+
+  // ~250 × 1.2s ≈ 300s ceiling — matches the Lambda's 5-min timeout so even a
+  // detailed all-projects report is polled to completion.
+  for (let i = 0; i < 250; i++) {
+    await new Promise((r) => setTimeout(r, 1200));
+    const idx = Math.min(steps.length - 1, Math.floor((Date.now() - t0) / 9000));
+    onThinking?.(steps[idx]);
+    try {
+      const job = await fetch(`${BASE}/${module}/chat/result/${jobId}`, {
+        headers: authHeaders(),
+      }).then((r) => r.json());
+      if (job?.status === "done" || job?.status === "error") { result = job; break; }
+    } catch { /* transient — keep polling */ }
+  }
+
+  if (!result || result.status === "error") {
+    onDone?.("default", "Something went wrong reaching the agent. Please try again.", false);
+    return;
+  }
+
+  // Client-side "typing" — reveal the report progressively as FORMATTED markdown
+  // for a streaming feel. Chart source (```mermaid …```) is swapped for a
+  // placeholder mid-stream; the real chart renders when onDone swaps in the card.
+  const full = result.reply || "";
+  const typingText = full
+    .replace(/```mermaid[\s\S]*?```/g, "\n📊 *building chart…*\n")
+    .replace(/```[\s\S]*?```/g, "");
+  // Fewer re-renders for long reports (each tick re-parses the growing markdown)
+  // so the type-out stays smooth; still lively for short replies.
+  const STEPS = Math.min(40, Math.max(16, Math.ceil(typingText.length / 200)));
+  const chunk = Math.max(1, Math.ceil(typingText.length / STEPS));
+  for (let n = chunk; n < typingText.length; n += chunk) {
+    onType?.(typingText.slice(0, n));
+    await new Promise((r) => setTimeout(r, 22));
+  }
+  onDone?.(result.ui_hint || "default", full, !!result.reportable);
 }
 
 /* ---------- Talent Management ---------- */
