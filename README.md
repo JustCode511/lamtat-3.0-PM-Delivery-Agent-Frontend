@@ -1,63 +1,113 @@
-# Delivery Intelligence — Frontend
+# AI Delivery Intelligence — Frontend
 
-React UI for the four AI agent modules: PM Delivery, Talent Management,
-Code Generation, and Cloud FinOps.
+React + Vite SPA for the AI agent platform. Four modules, each with a live dashboard
+and a Claude-style chat console side by side:
+
+- **PM Delivery** — project health, risks, leadership reports, PowerPoint export
+- **Talent Management** — skills, capacity, matching
+- **Cloud FinOps** — live AWS cost visibility, anomalies, rightsizing
+- **Code Generation** — (dashboard on the way)
+
+> Connected to the live backend by default (`USE_MOCK_FALLBACK = false` in
+> `src/api/client.js`). Set it to `true` for a backend-free demo with sample data.
+
+---
 
 ## What's here
-- **Login / Register** page (`src/pages/Login.jsx`)
-- **Home deck** with four module cards (`src/pages/Home.jsx`)
-- **Module view** — dashboard + chat side by side (`src/pages/ModuleView.jsx`)
-- **PM dashboard** — project list + drill-in with AI risk resolutions (`src/components/PMDashboard.jsx`)
-- **Chat panel** — reusable across all modules (`src/components/ChatPanel.jsx`)
-- **API client** — all backend calls in one place (`src/api/client.js`)
+- **Login / Register** (`src/pages/Login.jsx`)
+- **Home deck** — four module cards (`src/pages/Home.jsx`)
+- **Module view** — dashboard + chat, two columns (`src/pages/ModuleView.jsx`)
+- **ChatPanel** — reusable chat console for every module (`src/components/ChatPanel.jsx`)
+- **PMDashboard / TalentDashboard / FinOpsDashboard** — per-module dashboards
+- **API client** — every backend call in one place (`src/api/client.js`)
 
-## Runs immediately in DEMO MODE
-The API client (`src/api/client.js`) has `USE_MOCK_FALLBACK = true`, so the whole
-app is clickable right now with sample data — even before the backend is connected.
-Login accepts any credentials; the PM dashboard shows sample projects; chat echoes.
+---
+
+## Key features
+
+**Chat console (`ChatPanel.jsx`)**
+- **Streaming-style responses without a streaming backend.** For PM it calls
+  `chatWithPolling()`: fires `/pm/chat/async`, polls for the result, shows an
+  **animated "thinking" panel** with live progress ("Analysing risks…", "Drafting the
+  report…"), then **types the answer out as formatted markdown**, then swaps in the rich
+  card. Never times out, even for 40-second all-projects reports.
+- **Rich cards** — Mermaid **pie/bar charts** (black text, bright slices, clean white
+  card), markdown tables, an **Approve & Send to Leadership** panel for reports, and a
+  **Download PowerPoint** card for decks.
+- **Conversation history sidebar (fullscreen)** — grouped by recency
+  (**Recent · Last week · Last month · Older**), each group **collapsible**, with an
+  **in-app delete modal** (no native browser prompt) that also removes it server-side.
+- **Personalised greeting** on a new chat ("Good morning/afternoon/evening {name}"),
+  and **smooth stick-to-bottom** scrolling that settles on the end of the reply.
+
+**Dashboards**
+- **PMDashboard** — portfolio stat row, filterable project cards, drill-in with AI risk
+  resolutions, and a **Recent Activity** feed (recency-grouped + collapsible). The column
+  scrolls, so 4+ projects never clip the stats or the activity feed.
+- **FinOpsDashboard** — live cost summary, by-service breakdown, daily-spend trend,
+  anomaly & rightsizing tabs (reads AWS Cost Explorer via the backend).
+
+---
 
 ## Setup
-
 ```bash
 npm install
-npm run dev
+npm run dev          # http://localhost:5173
 ```
-Open http://localhost:5173
+Node is the only requirement (works the same on Windows and Mac).
 
-Works the same on Windows and Mac — only Node is required.
+**Local backend:** Vite proxies `/api/*` to `http://localhost:8000` (see
+`vite.config.js`). In production, CloudFront routes `/api/*` to API Gateway, so the
+frontend always talks to a same-origin `/api` — no CORS, no config per environment.
 
-## Connecting your backend
+---
 
-1. Your backend should run on `http://localhost:8000` (Vite proxies `/api/*` to it —
-   see `vite.config.js`). Change the target there if your port differs.
+## Backend contract (`src/api/client.js`)
 
-2. The frontend expects these endpoints (the CONTRACT). Adjust paths in
-   `src/api/client.js` if yours differ:
+| Frontend call | Method | Notes |
+|---|---|---|
+| `/auth/login`, `/auth/register` | POST `{username, password}` | → `{token, username}` |
+| `/pm/projects`, `/pm/dashboard/:key`, `/pm/activity` | GET | dashboard data |
+| `/pm/chat/async` | POST `{session_id, message, job_id}` | returns immediately (`pending`) |
+| `/pm/chat/result/:job_id` | GET | poll → `{status, reply, ui_hint, reportable}` |
+| `/pm/conversations`, `/pm/conversations/:id` | GET | history list / replay |
+| `/pm/conversations/:id` | DELETE | delete a conversation (ownership-scoped) |
+| `/pm/send-to-leadership` | POST | HITL approve → post report to Slack |
+| `/export/ppt[?project_key=KEY]` | GET | streams the `.pptx` (fetched with auth) |
+| `/finops/*`, `/talent/*` | GET/POST | FinOps & Talent modules |
 
-   | Frontend call | Method | Expected response |
-   |---|---|---|
-   | `/auth/login` | POST `{username, password}` | `{token, username}` |
-   | `/auth/register` | POST `{username, password}` | `{token, username}` |
-   | `/pm/projects` | GET | `{projects: [{key, name, health, completion_pct, overdue_count}]}` |
-   | `/pm/dashboard/:key` | GET | `{project_name, health, completion_pct, total, done, overdue_count, unassigned_count, critical_risks: [{key, summary, priority, days_overdue, unassigned, root_cause, fix, effort}]}` |
-   | `/:module/chat` | POST `{session_id, message}` | `{reply}` |
+`health` values: `HEALTHY`, `NEEDS_ATTENTION`, `AT_RISK`.
 
-   `health` is one of: `HEALTHY`, `NEEDS_ATTENTION`, `AT_RISK`.
+---
 
-3. Once your endpoints return real data, set `USE_MOCK_FALLBACK = false` in
-   `src/api/client.js`. Now it uses your live backend.
+## Build & deploy (AWS)
+```bash
+npm run build                                   # → dist/
+aws s3 sync dist/ s3://<bucket>/ --delete \
+  --cache-control "public,max-age=31536000,immutable" --exclude index.html
+aws s3 cp dist/index.html s3://<bucket>/index.html \
+  --cache-control "no-cache, must-revalidate" --content-type text/html
+aws cloudfront create-invalidation --distribution-id <id> --paths "/*"
+```
+Hashed assets are cached forever; **`index.html` is `no-cache`** so every deploy is
+picked up on the next load without a hard refresh. Served via CloudFront over a private
+S3 bucket (Origin Access Control) with HTTPS.
+
+---
 
 ## Design
-"Command deck" aesthetic — deep slate, electric-cyan signal accent, Space Grotesk
-display type, monospace for data. Each module has its own accent color.
+"Command deck" aesthetic — deep slate, electric-cyan/violet accents, Space Grotesk
+display type, monospace for data. Each module has its own accent color. Light & dark
+themes (toggle in the header).
 
 ## Structure
 ```
 src/
 ├── pages/       Login, Home, ModuleView
-├── components/  ChatPanel, PMDashboard
-├── api/         client.js (backend contract)
-├── context/     AuthContext (login state + token)
-├── modules.js   the four modules, one source of truth
-└── styles.css   design tokens
+├── components/  ChatPanel · PMDashboard · TalentDashboard · FinOpsDashboard
+│                FinOpsServicesPanel · CopilotPanel
+├── api/         client.js (backend contract + chatWithPolling)
+├── context/     AuthContext, ThemeContext
+├── modules.js   the modules, one source of truth
+└── styles.css   design tokens (light + dark)
 ```
