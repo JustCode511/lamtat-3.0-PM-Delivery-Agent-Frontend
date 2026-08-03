@@ -201,6 +201,7 @@ const INTENT_LABELS = {
   track_milestones:        { label: "Milestones" },
   send_slack_notification: { label: "Slack" },
   generate_ppt:            { label: "Report" },
+  talent_report:           { label: "Talent Report" },
   draft_deliverables:      { label: "Deliverables" },
 };
 
@@ -551,6 +552,96 @@ function PPTMessage({ text }) {
 
 function DeliverablesMessage({ text }) {
   return <RichMarkdown text={text} />;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// TALENT REPORT MESSAGE — PPTX / XLSX / DOCX downloads
+// Mirrors PPTMessage's fetch-with-auth pattern so the file is delivered
+// as a Blob (no browser-tab redirect that would strip the Bearer token).
+// ═══════════════════════════════════════════════════════════════════════
+
+function TalentReportMessage({ text }) {
+  const [dlState, setDlState] = useState({}); // { pptx: "loading" | "error" }
+
+  const formats = [
+    { key: "pptx", label: "PowerPoint", ext: ".pptx", icon: "📊", url: "/api/talent/export/ppt",  filename: "Talent_Report.pptx" },
+    { key: "xlsx", label: "Excel",      ext: ".xlsx", icon: "📗", url: "/api/talent/export/xlsx", filename: "Talent_Report.xlsx" },
+    { key: "docx", label: "Word",       ext: ".docx", icon: "📄", url: "/api/talent/export/docx", filename: "Talent_Report.docx" },
+  ];
+
+  async function handleDownload(fmt) {
+    if (dlState[fmt.key] === "loading") return;
+    setDlState(s => ({ ...s, [fmt.key]: "loading" }));
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(fmt.url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = fmt.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      setDlState(s => ({ ...s, [fmt.key]: "idle" }));
+    } catch {
+      setDlState(s => ({ ...s, [fmt.key]: "error" }));
+      setTimeout(() => setDlState(s => ({ ...s, [fmt.key]: "idle" })), 3000);
+    }
+  }
+
+  const sections = ["Team Overview", "Availability", "Skill Coverage", "Active Projects", "Rolling Off 30d"];
+
+  return (
+    <div className="msg-card ppt-card">
+      <div className="ppt-banner">
+        <div className="ppt-banner-icon">👥</div>
+        <div className="ppt-banner-text">
+          <div className="ppt-banner-title">Talent Report Ready</div>
+          <div className="ppt-banner-sub">PPTX · Excel · Word</div>
+        </div>
+        <div className="ppt-banner-badge">3 formats</div>
+      </div>
+      <div className="ppt-body">
+        <div className="ppt-includes-label">Includes</div>
+        <div className="ppt-sections">
+          {sections.map(s => (
+            <div key={s} className="ppt-section-chip">
+              <span className="ppt-chip-dot" />
+              {s}
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12 }}>
+          {formats.map(fmt => {
+            const st = dlState[fmt.key] || "idle";
+            return (
+              <button
+                key={fmt.key}
+                className={`ppt-download-btn${st === "loading" ? " ppt-dl-loading" : st === "error" ? " ppt-dl-error" : ""}`}
+                onClick={() => handleDownload(fmt)}
+                disabled={st === "loading"}
+              >
+                <span className="ppt-dl-arrow">
+                  {st === "loading" ? "⏳" : st === "error" ? "✕" : fmt.icon}
+                </span>
+                <span>
+                  {st === "loading" ? `Preparing ${fmt.label}…`
+                    : st === "error" ? `${fmt.label} failed — retry`
+                    : `Download ${fmt.label}`}
+                </span>
+                {st === "idle" && <span className="ppt-dl-ext">{fmt.ext}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -929,6 +1020,7 @@ function MessageRenderer({ msg, accent }) {
     case "create_issue":            return <IssueCreatedMessage text={text} />;
     case "send_slack_notification": return <SlackNotificationMessage text={text} />;
     case "generate_ppt":            return <PPTMessage text={text} />;
+    case "talent_report":           return <TalentReportMessage text={text} />;
     // ── Legacy / fallback ───────────────────────────────────────────────
     case "team_workload":           return <TeamWorkloadMessage text={text} />;
     case "compare_projects":        return <CompareProjectsMessage text={text} />;
