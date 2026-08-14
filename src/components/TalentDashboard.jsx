@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getTalentDashboard, getTalentMatrix, triggerTalentSync } from "../api/client.js";
+import { getTalentDashboard, getTalentMatrix } from "../api/client.js";
 
 const ACCENT = "#c84bff";
 
@@ -20,8 +20,6 @@ export default function TalentDashboard({ accentHex = ACCENT }) {
   const [stats, setStats]     = useState(null);
   const [matrix, setMatrix]   = useState(null);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
-  const [syncMsg, setSyncMsg] = useState(null);
   const [error, setError]     = useState(null);
   const [deptFilter, setDeptFilter] = useState("");
   const [skillFilter, setSkillFilter] = useState("");
@@ -35,24 +33,6 @@ export default function TalentDashboard({ accentHex = ACCENT }) {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    setSyncMsg(null);
-    try {
-      const r = await triggerTalentSync();
-      if (r.synced_employees !== undefined) {
-        setSyncMsg(`Synced from Jira — ${r.synced_employees} employees matched, ${r.updated_allocations} allocations updated. Unmatched: ${r.unmatched_assignees?.length ?? 0}.`);
-      } else {
-        setSyncMsg(`Sync failed: unexpected response`);
-      }
-      loadData();
-    } catch (e) {
-      setSyncMsg(`Sync failed: ${e.message}`);
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   if (loading) return <Skeleton accentHex={accentHex} />;
   if (error)   return <ErrorState message={error} />;
@@ -77,18 +57,7 @@ export default function TalentDashboard({ accentHex = ACCENT }) {
             <span style={s.alertPill}>⚠ {stats.overallocated_count} overallocated</span>
           )}
         </div>
-        <button
-          style={{ ...s.syncBtn, opacity: syncing ? 0.6 : 1 }}
-          onClick={handleSync}
-          disabled={syncing}
-        >
-          {syncing ? "Syncing…" : "⟳ Sync Jira"}
-        </button>
       </div>
-
-      {syncMsg && (
-        <div style={s.syncBanner}>{syncMsg}</div>
-      )}
 
       {/* Tabs */}
       <div style={s.tabs}>
@@ -421,8 +390,6 @@ const s = {
   badge:   { fontSize: 11, fontWeight: 700, border: "1px solid", borderRadius: 5, padding: "2px 8px", letterSpacing: "0.05em" },
   title:   { fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, letterSpacing: "-0.01em" },
   alertPill: { fontSize: 11, fontWeight: 700, color: "var(--text-danger)", background: "var(--bg-danger-pill)", border: "1px solid var(--border-danger)", borderRadius: 20, padding: "3px 10px" },
-  syncBtn: { fontSize: 12, fontWeight: 600, color: "var(--signal)", background: "rgba(34,211,238,0.08)", border: "1px solid rgba(34,211,238,0.25)", borderRadius: "var(--radius)", padding: "6px 14px", cursor: "pointer", transition: "all 0.15s" },
-  syncBanner: { fontSize: 12, color: "var(--ok)", background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.2)", borderRadius: "var(--radius)", padding: "8px 12px", flexShrink: 0 },
   tabs:    { display: "flex", gap: 0, borderBottom: "1px solid var(--border)", flexShrink: 0 },
   tab:     { background: "none", border: "none", borderBottom: "2px solid transparent", padding: "8px 16px", fontSize: 13, fontWeight: 600, color: "var(--text-mute)", cursor: "pointer", transition: "all 0.15s" },
   tabActive: { color: ACCENT, borderBottomColor: ACCENT },
